@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Bingo-Lose Prüfer</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    /* ===========================
+       THEME VARIABLES (light & dark)
+       =========================== */
+    :root{
+      --cell-size: 38px; /* <-- Haupt-Änderung: größere Zellen für zweistellige Zahlen */
+      --bg: #f0fdf6;
+      --card-bg: #fff;
+      --text: #222;
+      --muted: #666;
+      --accent-1: #2e8b57;
+      --accent-2: #43c59e;
+      --accent-dark: #20603d;
+      --danger: #e74c3c;
+      --border: #cfe8d8;
+      --shadow: 0 6px 22px rgba(0,0,0,0.08);
+      --glass: rgba(255,255,255,0.6);
+    }
+    .dark{
+      --cell-size: 52px;
+      --bg: #0f1720;
+      --card-bg: #0b1220;
+      --text: #e6eef0;
+      --muted: #aab7bd;
+      --accent-1: #6ee7b7;
+      --accent-2: #34d399;
+      --accent-dark: #0f766e;
+      --danger: #ff7b7b;
+      --border: rgba(255,255,255,0.06);
+      --shadow: 0 10px 30px rgba(0,0,0,0.6);
+      --glass: rgba(255,255,255,0.02);
+    }
+
+    /* ===========================
+       Global styles
+       =========================== */
+    *{box-sizing:border-box}
+    body{
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      margin:0;
+      background:linear-gradient(180deg,var(--bg),#eaf8ef 60%);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding-bottom:48px;
+    }
+    header{
+      background: linear-gradient(135deg,var(--accent-1),var(--accent-2));
+      color: white;
+      padding:28px 16px;
+      text-align:center;
+      box-shadow:var(--shadow);
+    }
+    header h1{margin:0;font-size:2.1rem;letter-spacing:1px}
+    header p{margin:8px 0 0;color:rgba(255,255,255,0.92)}
+
+    .container{
+      max-width:1200px;margin:24px auto;padding:0 16px;
+    }
+
+    .panel{
+      background:var(--card-bg);
+      border-radius:12px;
+      padding:16px;
+      box-shadow:var(--shadow);
+      border:1px solid var(--border);
+      margin-bottom:18px;
+    }
+
+    /* controls row */
+    .controls{
+      display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+      margin-bottom:12px;
+    }
+    .left-controls{display:flex;gap:10px;align-items:center}
+    .right-controls{display:flex;gap:10px;align-items:center}
+
+    input[type=number], input[type=text], textarea, select{
+      font-size:1rem;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--glass);color:var(--text);
+      box-shadow:0 2px 6px rgba(0,0,0,0.03);
+    }
+    input[type=number]{width:160px;text-align:center}
+    textarea{width:100%;min-height:120px;border-radius:8px}
+
+    button{
+      background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+      color:white;border: none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;
+      box-shadow:var(--shadow);transition:transform .12s ease, box-shadow .12s;
+    }
+    button.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+    button:hover{transform:translateY(-3px)}
+    button.small{padding:8px 10px;font-size:.95rem;border-radius:8px}
+
+    /* drawn area */
+    .drawn-wrap{display:flex;flex-direction:column;gap:10px}
+    .drawn-list{display:flex;flex-wrap:wrap;gap:8px}
+    .drawn-num{
+      padding:6px 10px;border-radius:999px;background:linear-gradient(180deg,var(--accent-1),var(--accent-2));color:#fff;font-weight:700;cursor:pointer;
+      box-shadow:0 6px 14px rgba(30,90,60,0.12);transition:transform .15s, box-shadow .15s;
+    }
+    .drawn-num:hover{transform:scale(1.08);box-shadow:0 10px 26px rgba(30,90,60,0.18)}
+    .drawn-stats{font-size:.95rem;color:var(--muted)}
+
+    /* cards grid */
+    .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:12px}
+    .card{
+      background:var(--card-bg);border-radius:12px;padding:12px;border:1px solid var(--border);position:relative;
+      transition:transform .14s, box-shadow .14s;overflow:hidden;
+    }
+    .card:hover{transform:translateY(-6px);box-shadow:0 20px 50px rgba(0,0,0,0.08)}
+    .card .card-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .card .card-name{flex:1;padding:6px 10px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted)}
+    .card .card-name:focus{outline:none;border-color:var(--border);background:transparent;color:var(--text)}
+    .delete-btn{position:absolute;top:10px;right:10px;border-radius:10px;padding:6px 8px;background:var(--danger);box-shadow:none;color:white;border:none;display:none}
+    .card.editable .delete-btn{display:block}
+
+    .bingo-table{width:100%;border-collapse:collapse}
+    .bingo-table th{color:var(--accent-1);font-weight:700;padding-bottom:6px}
+    .bingo-table td{padding:6px;text-align:center}
+    /* IMPORTANT: use CSS variable for cell size and ensure input fits */
+    .bingo-cell{
+      width: var(--cell-size);
+      height: var(--cell-size);
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:transparent;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin:2px auto;
+      transition:background .18s,transform .12s;
+      box-sizing:border-box;
+    }
+
+    .bingo-cell input{
+      display:block;
+      width:100%;
+      height:100%;
+      padding:0;
+      margin:0;
+      border:0;
+      outline: none;
+      background: transparent;
+      text-align:center;
+      font-weight:700;
+      font-size: calc(var(--cell-size) * 0.38); /* responsive font-size */
+      line-height: calc(var(--cell-size) * 0.92);      /* vertical centering */
+      box-sizing:border-box;
+      color:var(--text);
+      -webkit-appearance: none;
+      -moz-appearance: textfield;
+      appearance: none;
+    }
+
+    /* hide number input arrows on webkit/blink */
+    input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+
+    .bingo-cell.marked{background:linear-gradient(180deg,var(--accent-2),var(--accent-1));color:white;border-color:transparent;box-shadow:0 8px 18px rgba(30,90,60,0.12)}
+    .bingo-cell.invalid{background:linear-gradient(180deg,#fff4f4,#ffecec);border-color:var(--danger);color:var(--danger)}
+    .bingo-msg{position:absolute;top:10px;left:12px;padding:6px 10px;border-radius:8px;background:var(--accent-2);color:#fff;font-weight:800;box-shadow:var(--shadow);display:none}
+
+    /* helper icons/info */
+    .meta{font-size:0.8rem;color:var(--muted)}
+    .github-link {
+        color:var(--muted);
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+    .github-link:hover {
+        color:var(--muted);
+        text-decoration: underline;
+    }
+    .toolbar{display:flex;gap:8px;align-items:center}
+
+    /* modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:1000}
+    .modal{background:var(--card-bg);padding:18px;border-radius:12px;max-width:720px;width:96%;border:1px solid var(--border)}
+    .modal h3{margin-top:0}
+    .modal .cols{display:grid;grid-template-columns:1fr 320px;gap:12px}
+    .modal .close{float:right;background:transparent;border:0;font-size:1.2rem;color:var(--muted);cursor:pointer}
+
+    /* small screens */
+    @media(max-width:920px){
+      .controls{flex-direction:column;align-items:stretch}
+      .modal .cols{grid-template-columns:1fr}
+      :root{ --cell-size:48px; }
+      .bingo-cell input{ font-size: calc(var(--cell-size) * 0.38); line-height: calc(var(--cell-size)); }
+    }
+    @media(max-width:420px){
+      :root{ --cell-size:40px; }
+      .bingo-cell input{ font-size: calc(var(--cell-size) * 0.38); line-height: calc(var(--cell-size)); }
+      input[type=number]{ width: 120px; }
+    }
+
+    /* little animations */
+    @keyframes pulse {0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Bingo-Lose Prüfer</h1>
+  </header>
+
+  <main class="container">
+    <!-- CONTROLS -->
+    <section class="panel">
+      <div class="controls">
+        <div class="left-controls">
+          <form id="drawForm" onsubmit="return false;">
+            <input id="drawInput" type="number" min="1" max="75" placeholder="Gezogene Zahl eingeben (Enter)">
+          </form>
+          <button id="randomDrawBtn" class="small" title="Zieht zufällig eine Zahl (schnell)">🎲 Zufallsziehung</button>
+          <button id="clearDrawsBtn" class="small ghost" title="Alle gezogenen Zahlen löschen">🧹 Leeren</button>
+          <button id="undoBtn" class="small ghost" title="Undo">↶ Rückgängig</button>
+          <button id="redoBtn" class="small ghost" title="↷ Wieder">↷ Wieder</button>
+          <button id="toggleAutoBtn" class="small" title="Automatikmodus starten/stoppen">▶️ Automatik starten</button>
+          <span id="autoRoundCount" class="meta" style="margin-left:20px">Runden: 0</span>
+        </div>
+
+        <div class="right-controls">
+          <div class="toolbar">
+            <span class="meta">Gezogen: <strong id="drawCount">0</strong>/22</span>
+            <span class="meta" style="margin-left:12px">B: <strong id="countB">0</strong> I: <strong id="countI">0</strong> N: <strong id="countN">0</strong> G: <strong id="countG">0</strong> O: <strong id="countO">0</strong></span>
+            <button id="helpBtn" class="small ghost" title="Hilfe">❓ Hilfe</button>
+            <button id="exportBtn" class="small" title="Zum lokalen JSON exportieren">📥 Export</button>
+            <button id="importBtn" class="small ghost" title="JSON laden">📤 Import</button>
+            <input id="fileInput" type="file" accept=".json" style="display:none">
+          </div>
+        </div>
+      </div>
+
+      <div class="drawn-wrap">
+        <div class="drawn-list" id="drawnList" aria-live="polite"></div>
+        <div class="drawn-stats meta" id="drawnHint">Klicke eine Zahl, um sie zu entfernen. Max. 22 Zahlen.</div>
+      </div>
+    </section>
+
+    <!-- CARDS -->
+    <section class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h2 style="margin:0">Bingo-Lose</h2>
+        <div style="display:flex;gap:8px">
+          <button id="addCardBtn" class="small">➕ Neues Los</button>
+          <button id="modeToggle" class="small" title="Lose bearbeiten">🛠️ Lose bearbeiten</button>
+          <button id="textImportBtn" class="small ghost">📝 Text-Import</button>
+          <button id="clearAllCardsBtn" class="small ghost" title="Alle Lose löschen">🗑️ Alle löschen</button>
+        </div>
+      </div>
+
+      <div id="cardsGrid" class="cards-grid"></div>
+    </section>
+
+    <!-- FOOTER ACTIONS -->
+    <section style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+      <button id="resetBtn" class="small ghost">♻️ Zurücksetzen</button>
+      <div class="meta" style="margin-left:auto">Version: <strong>1.0</strong> <a href="https://github.com/ultrahochfreq/bingo" target="_blank" class="github-link">GitHub Repository</a></div>
+    </section>
+  </main>
+
+  <!-- TEXT IMPORT MODAL -->
+  <div id="textModalBackdrop" class="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="close" id="closeTextModalBtn">✕</button>
+      <h3>Text-Import für Bingo-Los</h3>
+      <p>Füge Zahlen ein (z. B. aus Foto-OCR). System versucht Spalten B/I/N/G/O zuzuordnen.</p>
+      <div style="margin-top:8px">
+        <textarea id="textImportArea" placeholder="Beispiel:
+B_1
+I_1
+N_1
+G_1
+O_1
+B_2
+I_2
+..."></textarea>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="processTextBtn">Los erstellen</button>
+        <button id="cancelTextBtn" class="ghost">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HELP / SHORTCUTS MODAL -->
+  <div id="helpModalBackdrop" class="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="close" id="closeHelpBtn">✕</button>
+      <h3>Hilfe</h3>
+      <div style="display:grid;gap:8px">
+        <div><strong>Max. gezogene Zahlen</strong>: 22</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const VERSION = "1.0";
+    const MAX_DRAWS = 22;
+    const ranges = [
+      { letter: 'B', min: 1, max: 15 },
+      { letter: 'I', min: 16, max: 30 },
+      { letter: 'N', min: 31, max: 45 },
+      { letter: 'G', min: 46, max: 60 },
+      { letter: 'O', min: 61, max: 75 }
+    ];
+
+    let drawnNumbers = [[],[],[],[],[]];
+    let allDrawn = [];
+    let cards = [];
+    let editMode = false;
+    let actionStack = [];
+    let redoStack = [];
+    const ACTION_LIMIT = 200;
+
+    // DOM refs
+    const drawForm = document.getElementById('drawForm');
+    const drawInput = document.getElementById('drawInput');
+    const drawnList = document.getElementById('drawnList');
+    const drawCount = document.getElementById('drawCount');
+    const counts = { B:document.getElementById('countB'), I:document.getElementById('countI'), N:document.getElementById('countN'), G:document.getElementById('countG'), O:document.getElementById('countO') };
+
+    const addCardBtn = document.getElementById('addCardBtn');
+    const textImportBtn = document.getElementById('textImportBtn');
+    const cardsGrid = document.getElementById('cardsGrid');
+    const modeToggle = document.getElementById('modeToggle');
+    const randomDrawBtn = document.getElementById('randomDrawBtn');
+    const clearDrawsBtn = document.getElementById('clearDrawsBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    const helpBtn = document.getElementById('helpBtn');
+    const helpModalBackdrop = document.getElementById('helpModalBackdrop');
+    const closeHelpBtn = document.getElementById('closeHelpBtn');
+
+    const textModalBackdrop = document.getElementById('textModalBackdrop');
+    const processTextBtn = document.getElementById('processTextBtn');
+    const cancelTextBtn = document.getElementById('cancelTextBtn');
+    const closeTextModalBtn = document.getElementById('closeTextModalBtn');
+    const textImportArea = document.getElementById('textImportArea');
+
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const fileInput = document.getElementById('fileInput');
+
+    const resetBtn = document.getElementById('resetBtn');
+    const clearAllCardsBtn = document.getElementById('clearAllCardsBtn');
+
+    // Helpers
+    function cloneEmptyGrid(){ return Array.from({length:5}, ()=>Array.from({length:5}, ()=>"")); }
+    function getLetterIndex(num){ for (let i=0;i<ranges.length;i++) if (num>=ranges[i].min && num<=ranges[i].max) return i; return -1; }
+    function validateBingoCell(val, col){ const n=parseInt(val,10); return !isNaN(n) && n>=ranges[col].min && n<=ranges[col].max; }
+    function pushAction(action){ actionStack.push(action); if (actionStack.length> ACTION_LIMIT) actionStack.shift(); redoStack=[]; updateUndoRedoButtons(); }
+    function updateUndoRedoButtons(){ undoBtn.disabled = actionStack.length===0; redoBtn.disabled = redoStack.length===0; }
+
+    // Rendering
+    function updateDrawStats(){
+      drawCount.textContent = allDrawn.length;
+      counts.B.textContent = drawnNumbers[0].length;
+      counts.I.textContent = drawnNumbers[1].length;
+      counts.N.textContent = drawnNumbers[2].length;
+      counts.G.textContent = drawnNumbers[3].length;
+      counts.O.textContent = drawnNumbers[4].length;
+    }
+
+    function updateDrawnList(){
+      drawnList.innerHTML = '';
+      ranges.forEach((r, i) => {
+        const span = document.createElement('span');
+        span.style.marginRight = "12px";
+        span.innerHTML = `<strong style="color:var(--accent-1)">${r.letter}:</strong>&nbsp;`;
+        const nums = drawnNumbers[i].slice().sort((a,b)=>a-b);
+        nums.forEach(n => {
+          const b = document.createElement('button');
+          b.className = 'drawn-num';
+          b.dataset.num = n;
+          b.title = 'Klicken zum Entfernen';
+          b.textContent = n;
+          span.appendChild(b);
+        });
+        drawnList.appendChild(span);
+      });
+      updateDrawStats();
+    }
+
+    function renderCards(){
+      cardsGrid.innerHTML = '';
+      cards.forEach((card, index) => {
+        const c = document.createElement('div');
+        c.className = 'card' + (editMode ? ' editable' : '');
+        c.dataset.index = index;
+
+        const bingoMsg = document.createElement('div');
+        bingoMsg.className = 'bingo-msg';
+        bingoMsg.id = `bingo-msg-${index}`;
+        c.appendChild(bingoMsg);
+
+        const top = document.createElement('div');
+        top.className = 'card-top';
+        const nameInp = document.createElement('input');
+        nameInp.className = 'card-name';
+        nameInp.value = card.name || '';
+        nameInp.placeholder = editMode ? 'Name des Loses' : '';
+        nameInp.disabled = !editMode;
+        nameInp.addEventListener('input', (e)=>{
+          const old = card.name;
+          card.name = e.target.value;
+          pushAction({type:'edit-card-name', idx:index, old, neu:card.name});
+        });
+        top.appendChild(nameInp);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = '🗑';
+        deleteBtn.title = 'Los löschen';
+        deleteBtn.addEventListener('click', ()=>{ if (confirm('Los entfernen?')){ const removed = cards.splice(index,1)[0]; pushAction({type:'delete-card', idx:index, card:removed}); renderCards(); }});
+        top.appendChild(deleteBtn);
+
+        c.appendChild(top);
+
+        const table = document.createElement('table');
+        table.className = 'bingo-table';
+        const thead = document.createElement('tr');
+        ranges.forEach(r => { const th = document.createElement('th'); th.textContent = r.letter; thead.appendChild(th); });
+        table.appendChild(thead);
+
+        for (let row=0; row<5; row++){
+          const tr = document.createElement('tr');
+          for (let col=0; col<5; col++){
+            const td = document.createElement('td');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'bingo-cell';
+            const inp = document.createElement('input');
+            inp.type = 'number';
+            inp.min = ranges[col].min;
+            inp.max = ranges[col].max;
+            inp.value = (card.numbers && card.numbers[row] && (card.numbers[row][col] !== undefined)) ? card.numbers[row][col] : '';
+            inp.disabled = !editMode;
+            inp.addEventListener('input', (e)=>{
+              const old = card.numbers[row][col];
+              const v = e.target.value.trim();
+              card.numbers[row][col] = v === '' ? '' : (validateBingoCell(v,col) ? parseInt(v,10) : v);
+              if (v !== '' && !validateBingoCell(v,col)) wrapper.classList.add('invalid'); else wrapper.classList.remove('invalid');
+              pushAction({type:'edit-cell', cardIdx:index, row, col, old, neu:card.numbers[row][col]});
+              checkDuplicatesInCard(index);
+              updateCardMarks(index);
+            });
+            inp.addEventListener('blur', (e)=>{
+              const v = e.target.value.trim();
+              if (v !== '' && !validateBingoCell(v,col)){
+                alert(`Ungültiger Wert! Spalte ${ranges[col].letter} erlaubt nur Zahlen von ${ranges[col].min} bis ${ranges[col].max}.`);
+                e.target.focus();
+              }
+            });
+            wrapper.appendChild(inp);
+            td.appendChild(wrapper);
+            tr.appendChild(td);
+          }
+          table.appendChild(tr);
+        }
+
+        c.appendChild(table);
+        cardsGrid.appendChild(c);
+
+        updateCardMarks(index);
+        checkDuplicatesInCard(index);
+      });
+    }
+
+    function updateCardMarks(cardIdx){
+      const card = cards[cardIdx];
+      if (!card) return;
+      const cardEl = cardsGrid.querySelector(`.card[data-index="${cardIdx}"]`);
+      if (!cardEl) return;
+      const cells = cardEl.querySelectorAll('.bingo-cell');
+      let matrix = Array.from({length:5}, ()=>Array(5).fill(false));
+      let idx=0;
+      for (let r=0;r<5;r++){
+        for (let c=0;c<5;c++){
+          const wrapper = cells[idx];
+          const inp = wrapper.querySelector('input');
+          const val = inp.value === '' ? "" : parseInt(inp.value,10);
+          if (!isNaN(val) && drawnNumbers[c].includes(val)){
+            wrapper.classList.add('marked');
+            matrix[r][c] = true;
+          } else {
+            wrapper.classList.remove('marked');
+            matrix[r][c] = false;
+          }
+          idx++;
+        }
+      }
+      checkMultiBingo(cardIdx, matrix);
+    }
+
+    function updateAllCards(){ for (let i=0;i<cards.length;i++) updateCardMarks(i); }
+
+    function checkMultiBingo(cardIdx, matrix){
+      let bingoCount = 0;
+      for (let r=0;r<5;r++) if (matrix[r].every(Boolean)) bingoCount++;
+      for (let c=0;c<5;c++){
+        let ok=true;
+        for (let r=0;r<5;r++){ if (!matrix[r][c]){ ok=false; break; } }
+        if (ok) bingoCount++;
+      }
+      if (matrix.every((row,i)=>row[i])) bingoCount++;
+      if (matrix.every((row,i)=>row[4-i])) bingoCount++;
+
+      const msg = document.getElementById(`bingo-msg-${cardIdx}`);
+      if (!msg) return;
+      if (bingoCount===0){ msg.style.display='none'; }
+      else { msg.style.display='block'; msg.textContent = bingoCount===1?'BINGO!':bingoCount===2?'DOPPEL-BINGO!':bingoCount===3?'DREIFACH-BINGO!':'MEHRFACH-BINGO!'; }
+    }
+
+    function checkDuplicatesInCard(cardIdx){
+      const card = cards[cardIdx];
+      if (!card) return;
+      const flat = card.numbers.flat().filter(v => v !== '' && v !== null);
+      const duplicates = flat.filter((v,i,a)=> a.indexOf(v)!==i);
+      const cardEl = cardsGrid.querySelector(`.card[data-index="${cardIdx}"]`);
+      if (!cardEl) return;
+      const inputs = cardEl.querySelectorAll('input[type=number]');
+      inputs.forEach(inp=> inp.parentElement.classList.remove('invalid'));
+      if (duplicates.length>0){
+        inputs.forEach(inp=>{
+          const val = inp.value;
+          if (duplicates.includes(parseInt(val,10))) inp.parentElement.classList.add('invalid');
+        });
+      }
+    }
+
+    // Draw handling
+    function addDraw(num){
+      const idx = getLetterIndex(num);
+      if (idx===-1) return false;
+      if (allDrawn.includes(num)) return false;
+      if (allDrawn.length >= MAX_DRAWS) { alert(`Maximal ${MAX_DRAWS} Zahlen insgesamt erlaubt!`); return false; }
+      drawnNumbers[idx].push(num);
+      allDrawn.push(num);
+      pushAction({type:'add-draw', num});
+      updateDrawnList(); updateAllCards();
+      return true;
+    }
+
+    function removeDraw(num){
+      const idx = getLetterIndex(num);
+      if (idx===-1) return false;
+      drawnNumbers[idx] = drawnNumbers[idx].filter(n => n !== num);
+      allDrawn = allDrawn.filter(n => n !== num);
+      pushAction({type:'remove-draw', num});
+      updateDrawnList(); updateAllCards();
+      return true;
+    }
+
+    // Undo/Redo
+    function undo(){
+      const action = actionStack.pop();
+      if (!action) return;
+      redoStack.push(action);
+      switch(action.type){
+        case 'add-draw':
+          drawnNumbers[getLetterIndex(action.num)] = drawnNumbers[getLetterIndex(action.num)].filter(n=> n!==action.num);
+          allDrawn = allDrawn.filter(n=>n!==action.num);
+          break;
+        case 'remove-draw':
+          drawnNumbers[getLetterIndex(action.num)].push(action.num); allDrawn.push(action.num);
+          break;
+        case 'edit-cell':
+          cards[action.cardIdx].numbers[action.row][action.col] = action.old;
+          break;
+        case 'edit-card-name':
+          cards[action.idx].name = action.old;
+          break;
+        case 'delete-card':
+          cards.splice(action.idx,0,action.card);
+          break;
+        case 'create-card':
+          cards.splice(action.idx,1);
+          break;
+        case 'clear-draws':
+          action.old.forEach(n => { drawnNumbers[getLetterIndex(n)].push(n); allDrawn.push(n); });
+          break;
+        default:
+          console.warn('Unknown undo action', action);
+      }
+      renderCards(); updateDrawnList(); updateUndoRedoButtons();
+    }
+
+    function redo(){
+      const action = redoStack.pop();
+      if (!action) return;
+      actionStack.push(action);
+      switch(action.type){
+        case 'add-draw':
+          drawnNumbers[getLetterIndex(action.num)].push(action.num); allDrawn.push(action.num);
+          break;
+        case 'remove-draw':
+          drawnNumbers[getLetterIndex(action.num)] = drawnNumbers[getLetterIndex(action.num)].filter(n=> n!==action.num); allDrawn = allDrawn.filter(n=>n!==action.num);
+          break;
+        case 'edit-cell':
+          cards[action.cardIdx].numbers[action.row][action.col] = action.neu;
+          break;
+        case 'edit-card-name':
+          cards[action.idx].name = action.neu;
+          break;
+        case 'delete-card':
+          cards.splice(action.idx,1);
+          break;
+        case 'create-card':
+          cards.splice(action.idx,0,action.card);
+          break;
+        case 'clear-draws':
+          drawnNumbers = [[],[],[],[],[]]; allDrawn = [];
+          break;
+      }
+      renderCards(); updateDrawnList(); updateUndoRedoButtons();
+    }
+
+    // JSON import/export
+    function exportToJSON(){
+      const state = { version: VERSION, timestamp: new Date().toISOString(), drawnNumbers: allDrawn, cards: cards };
+      const str = JSON.stringify(state, null, 2);
+      const blob = new Blob([str], {type:'application/json'});
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `bingo-spiel-${new Date().toISOString().slice(0,10)}.json`;
+      link.click();
+    }
+
+    function importFromJSONFile(file){
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e=>{
+        try{
+          const state = JSON.parse(e.target.result);
+          if (state.drawnNumbers && Array.isArray(state.drawnNumbers)){
+            drawnNumbers = [[],[],[],[],[]]; allDrawn = [];
+            state.drawnNumbers.forEach(num =>{
+              const n = parseInt(num,10);
+              if (!isNaN(n) && n>=1 && n<=75 && !allDrawn.includes(n)){
+                const idx = getLetterIndex(n);
+                if (idx!==-1) drawnNumbers[idx].push(n), allDrawn.push(n);
+              }
+            });
+          }
+          if (state.cards && Array.isArray(state.cards)){
+            cards = state.cards.map(c=>({ name: c.name || '', numbers: normalizeNumbersMatrix(c.numbers) }));
+          }
+          renderCards(); updateDrawnList(); alert('Bingo-Spiel erfolgreich geladen!');
+        }catch(err){
+          alert('Fehler beim Laden: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function normalizeNumbersMatrix(m){
+      const res = cloneEmptyGrid();
+      if (!Array.isArray(m)) return res;
+      for (let r=0;r<5;r++){
+        if (!Array.isArray(m[r])) continue;
+        for (let c=0;c<5;c++){
+          const val = m[r][c];
+          res[r][c] = (val === null || val === undefined) ? '' : val;
+        }
+      }
+      return res;
+    }
+
+    // Text import
+    function extractNumbersFromText(text){
+      const nums = text.match(/\d+/g);
+      if (!nums) return null;
+      const valid = nums.map(n=>parseInt(n,10)).filter(n => n>=1 && n<=75);
+      if (valid.length<15) return null;
+      const buckets = [[],[],[],[],[]];
+      valid.forEach(n=>{ const idx = getLetterIndex(n); if (idx!==-1) buckets[idx].push(n); });
+      const grid = [];
+      for (let r=0;r<5;r++){
+        const row = [];
+        for (let c=0;c<5;c++) row.push(buckets[c][r] !== undefined ? buckets[c][r] : '');
+        grid.push(row);
+      }
+      return grid.flat().filter(v=>v!=='').length < 15 ? null : grid;
+    }
+
+    function createCardFromNumbers(numbers, source='Text-Import'){
+      const newCard = { name: `${source} ${new Date().toLocaleTimeString()}`, numbers };
+      cards.push(newCard);
+      pushAction({type:'create-card', idx: cards.length-1, card: newCard});
+      renderCards(); updateAllCards(); alert(`Los erstellt: erkannte Zahlen ${numbers.flat().filter(n=>n!=='').length}/25`);
+    }
+
+    // Utilities
+    function resetAll(){ if (!confirm('Alles zurücksetzen? (gezogene Zahlen & Lose)')) return; drawnNumbers=[[],[],[],[],[]]; allDrawn=[]; cards=[]; actionStack=[]; redoStack=[]; renderCards(); updateDrawnList(); updateUndoRedoButtons(); }
+    function clearAllCards(){ if (!confirm('Alle Lose endgültig löschen?')) return; cards=[]; pushAction({type:'clear-all-cards'}); renderCards(); }
+
+    // Random draw
+    function randomDraw(){ const possible=[]; for (let i=1;i<=75;i++) if (!allDrawn.includes(i)) possible.push(i); if (!possible.length){ alert('Keine verbleibenden Zahlen!'); return; } const pick = possible[Math.floor(Math.random()*possible.length)]; addDraw(pick); }
+
+    // Event wiring
+    drawForm.addEventListener('submit', (e)=>{ e.preventDefault(); const v = drawInput.value.trim(); const n = parseInt(v,10); drawInput.value=''; if (isNaN(n)) return; addDraw(n); });
+    drawnList.addEventListener('click', (e)=>{ if (!e.target.classList.contains('drawn-num')) return; const num = parseInt(e.target.dataset.num,10); if (!isNaN(num)) removeDraw(num); });
+    randomDrawBtn.addEventListener('click', randomDraw);
+    clearDrawsBtn.addEventListener('click', ()=>{ if (!confirm('Gezogene Zahlen löschen?')) return; const old = allDrawn.slice(); drawnNumbers=[[],[],[],[],[]]; allDrawn=[]; pushAction({type:'clear-draws', old}); updateDrawnList(); updateAllCards(); });
+
+    addCardBtn.addEventListener('click', ()=>{ const c = { name:'', numbers: cloneEmptyGrid() }; cards.push(c); pushAction({type:'create-card', idx: cards.length-1, card: c}); renderCards(); });
+    clearAllCardsBtn.addEventListener('click', clearAllCards);
+
+    modeToggle.addEventListener('click', ()=>{ editMode = !editMode; modeToggle.textContent = editMode ? '🎟️ Lose spielen' : '🛠️ Lose bearbeiten'; renderCards(); });
+    textImportBtn.addEventListener('click', ()=>{ textModalBackdrop.style.display='flex'; textImportArea.focus(); });
+    closeTextModalBtn.addEventListener('click', ()=> textModalBackdrop.style.display='none');
+    cancelTextBtn.addEventListener('click', ()=> textModalBackdrop.style.display='none');
+    processTextBtn.addEventListener('click', ()=>{ const t = textImportArea.value.trim(); if (!t){ alert('Bitte Text eingeben'); return; } const grid = extractNumbersFromText(t); if (!grid){ alert('Nicht genügend oder keine gültigen Bingo-Zahlen im Text gefunden (mind. 15).'); return; } createCardFromNumbers(grid); textModalBackdrop.style.display='none'; });
+
+    helpBtn.addEventListener('click', ()=> helpModalBackdrop.style.display='flex');
+    closeHelpBtn.addEventListener('click', ()=> helpModalBackdrop.style.display='none');
+
+    exportBtn.addEventListener('click', exportToJSON);
+    importBtn.addEventListener('click', ()=> fileInput.click());
+    fileInput.addEventListener('change', (e)=>{ const f = e.target.files[0]; if (f) importFromJSONFile(f); fileInput.value=''; });
+
+    resetBtn.addEventListener('click', resetAll);
+
+    undoBtn.addEventListener('click', undo);
+    redoBtn.addEventListener('click', redo);
+
+    document.getElementById('textModalBackdrop').addEventListener('click', (e)=>{ if (e.target === textModalBackdrop) textModalBackdrop.style.display='none'; });
+    helpModalBackdrop.addEventListener('click', (e)=>{ if (e.target === helpModalBackdrop) helpModalBackdrop.style.display='none'; });
+
+    function init(){ renderCards(); updateDrawnList(); updateUndoRedoButtons(); }
+    init();
+
+    // Expose for debugging
+    window.Bingo = { addDraw, removeDraw, exportToJSON, importFromJSONFile, addCard: ()=>addCardBtn.click(), randomDraw };
+  </script>
+  <script>
+  (function(){
+    const MAX_DRAWS = 22;
+    let autoRunning = false;
+    let roundCount = 0;
+    let drawIndex = 0;
+    let availableNumbers = [];
+    let autoTimeout = null;
+
+    const autoBtn = document.getElementById('toggleAutoBtn');
+    const roundDisplay = document.getElementById('autoRoundCount');
+
+    function updateRoundDisplay() {
+      if(roundDisplay) roundDisplay.textContent = 'Runden: ' + roundCount;
+    }
+
+    function bingoAchieved() {
+      for(let i=0; i<cards.length; i++){
+        const card = cards[i];
+        if(!card) continue;
+        let matrix = Array.from({length:5}, () => Array(5).fill(false));
+        for(let r=0; r<5; r++){
+          for(let c=0; c<5; c++){
+            const val = card.numbers[r][c];
+            if(typeof val === 'number' && drawnNumbers[c].includes(val)){
+              matrix[r][c] = true;
+            }
+          }
+        }
+        let countBingo = 0;
+        for(let r=0; r<5; r++) if(matrix[r].every(Boolean)) countBingo++;
+        for(let c=0; c<5; c++) if(matrix.every(row => row[c])) countBingo++;
+        if(matrix.every((row,i)=>row[i])) countBingo++;
+        if(matrix.every((row,i)=>row[4-i])) countBingo++;
+        if(countBingo > 0) return true;
+      }
+      return false;
+    }
+
+    function resetDraws() {
+      // Alle gezogenen Zahlen entfernen
+      while(allDrawn.length > 0){
+        removeDraw(allDrawn[allDrawn.length - 1]);
+      }
+      initAvailableNumbers();
+    }
+
+    function initAvailableNumbers() {
+      availableNumbers = [];
+      for(let i=1; i<=75; i++){
+        if(!allDrawn.includes(i)) availableNumbers.push(i);
+      }
+    }
+
+    function drawNextNumber() {
+      if(!autoRunning) return;
+      if(drawIndex >= MAX_DRAWS){
+        // 22 Zahlen gezogen, jetzt prüfen
+        if(bingoAchieved()){
+          alert(`Bingo in Runde ${roundCount+1} erreicht!`);
+          toggleAuto(false);
+          return;
+        }
+        // Kein Bingo, zurücksetzen und neue Runde
+        resetDraws();
+        roundCount++;
+        updateRoundDisplay();
+        drawIndex = 0;
+        setTimeout(drawNextNumber, 100); // Pause 0.1s vor nächster Runde
+        return;
+      }
+      // Noch nicht 22 Zahlen gezogen => nächste ziehen
+      if(availableNumbers.length === 0){
+        alert('Keine Zahlen mehr verfügbar, Stopp!');
+        toggleAuto(false);
+        return;
+      }
+      // Zahl zufällig wählen
+      const idx = Math.floor(Math.random()*availableNumbers.length);
+      const num = availableNumbers.splice(idx,1)[0];
+      addDraw(num);
+      drawIndex++;
+      setTimeout(drawNextNumber, 300); // 300ms Pause bis zur nächsten Ziehung
+    }
+
+    function toggleAuto(start) {
+      if(typeof start === 'undefined') start = !autoRunning;
+      autoRunning = start;
+      if(autoRunning){
+        autoBtn.textContent = '⏹️ Automatik stoppen';
+        roundCount = 0;
+        updateRoundDisplay();
+        resetDraws();
+        initAvailableNumbers();
+        drawIndex = 0;
+        drawNextNumber();
+      } else {
+        autoBtn.textContent = '▶️ Automatik starten';
+        if(autoTimeout){
+          clearTimeout(autoTimeout);
+          autoTimeout = null;
+        }
+      }
+    }
+
+    // Eventlistener für Button
+    autoBtn.addEventListener('click', () => {
+      toggleAuto();
+    });
+
+    // Falls Button und Anzeige noch nicht im DOM sind, Ausgabe in Konsole:
+    if(!autoBtn) console.warn('Button für Automatikmodus (toggleAutoBtn) fehlt im DOM');
+    if(!roundDisplay) console.warn('Anzeige für Runden (autoRoundCount) fehlt im DOM');
+
+  })();
+</script>
+
+</body>
+</html>
