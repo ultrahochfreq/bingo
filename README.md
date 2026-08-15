@@ -6,13 +6,12 @@ Ein browserbasiertes Tool zur digitalen Verwaltung, Ziehung und automatischen Ü
 
 Nutzer können gezogene Bingo-Zahlen direkt über ein Textfeld eintippen und mit der Enter-Taste bestätigen. Alternativ zieht der Zufallsziehungs-Button sofort eine einzelne, zufällige Zahl aus dem verbleibenden Pool.
 
-*   **Automatikmodus:** Der Autoplay-Modus zieht alle 300 Millisekunden selbstständig eine zufällige Zahl. Die Automatik stoppt sofort, sobald ein Los ein Bingo erreicht oder das Limit von 22 Ziehungen voll ist. Werden 22 Zahlen ohne Gewinn gezogen, leert das System die Ziehung automatisch, erhöht den Rundenzähler und startet nach einer Zehntelsekunde den nächsten Durchlauf.
 *   **Korrekturen:** Ein direkter Klick auf eine bereits gezogene Zahl in der Übersichtsliste entfernt diese zielgenau aus der aktuellen Spielrunde. Nutzer können zudem das gesamte Ziehungsfeld über den "Leeren"-Button nach einer kurzen Sicherheitsabfrage komplett bereinigen.
 *   **Rückgängig & Wiederholen:** Ein Verlaufsspeicher erlaubt es, bis zu 200 Aktionen beliebig oft vor- und zurückzuspringen.
 
 ## 📊 Live-Statistiken und Prüfung
 
-Während der Ziehung zeigt ein Zähler exakt an, wie viele der maximal 22 erlaubten Zahlen in der aktuellen Runde bereits gezogen wurden. Ein separater Rundenzähler dokumentiert die Anzahl der gespielten Runden, was besonders während der aktiven Automatik hilfreich ist. Gleichzeitig protokolliert eine Echtzeit-Anzeige, wie sich die gezogenen Zahlen auf die fünf Spalten B, I, N, G und O verteilen.
+Während der Ziehung zeigt ein Zähler exakt an, wie viele der maximal 22 erlaubten Zahlen in der aktuellen Runde bereits gezogen wurden. Gleichzeitig protokolliert eine Echtzeit-Anzeige, wie sich die gezogenen Zahlen auf die fünf Spalten B, I, N, G und O verteilen.
 
 Sobald das System eine Zahl zieht, markiert es diese automatisch farblich auf allen betroffenen Losen im Deck. Ein Prüf-Algorithmus kontrolliert nach jeder Ziehung horizontal, vertikal sowie auf beiden Diagonalen, ob ein Los eine vollständige Reihe erreicht hat. Bei Erfolg blendet das Skript direkt auf dem jeweiligen Los Warntexte wie "BINGO!", "DOPPEL-BINGO!" oder "MEHRFACH-BINGO!" ein.
 
