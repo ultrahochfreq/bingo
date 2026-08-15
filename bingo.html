@@ -2,299 +2,459 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>Bingo-Lose Prüfer</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bingo-Prüfer</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#2e8b57" />
   <style>
-    /* ===========================
-       THEME VARIABLES (light & dark)
-       =========================== */
+    /* ===========================================================
+       Design-Tokens (hell + automatisch dunkel)
+       =========================================================== */
     :root{
-      --cell-size: 38px; /* <-- Haupt-Änderung: größere Zellen für zweistellige Zahlen */
-      --bg: #f0fdf6;
-      --card-bg: #fff;
-      --text: #222;
-      --muted: #666;
-      --accent-1: #2e8b57;
-      --accent-2: #43c59e;
-      --accent-dark: #20603d;
-      --danger: #e74c3c;
-      --border: #cfe8d8;
-      --shadow: 0 6px 22px rgba(0,0,0,0.08);
-      --glass: rgba(255,255,255,0.6);
+      --cell-size: 46px;
+      --bg:#eef4f0;
+      --surface:#ffffff;
+      --surface-2:#f3f8f5;
+      --text:#16241d;
+      --muted:#6b7d74;
+      --accent:#2e8b57;
+      --accent-2:#43c59e;
+      --accent-ink:#ffffff;
+      --danger:#e05a4d;
+      --border:#e3ece7;
+      --ring:rgba(46,139,87,.30);
+      --shadow-sm:0 1px 2px rgba(16,40,30,.06);
+      --shadow-md:0 10px 30px rgba(16,40,30,.12);
+      --radius:16px;
     }
-    .dark{
-      --cell-size: 52px;
-      --bg: #0f1720;
-      --card-bg: #0b1220;
-      --text: #e6eef0;
-      --muted: #aab7bd;
-      --accent-1: #6ee7b7;
-      --accent-2: #34d399;
-      --accent-dark: #0f766e;
-      --danger: #ff7b7b;
-      --border: rgba(255,255,255,0.06);
-      --shadow: 0 10px 30px rgba(0,0,0,0.6);
-      --glass: rgba(255,255,255,0.02);
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0e1512;
+        --surface:#161f1b;
+        --surface-2:#1c2822;
+        --text:#e6efe9;
+        --muted:#9db1a6;
+        --accent:#4ac78d;
+        --accent-2:#34d399;
+        --accent-ink:#052018;
+        --danger:#ff8a7d;
+        --border:#26362f;
+        --ring:rgba(74,199,141,.35);
+        --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+        --shadow-md:0 12px 30px rgba(0,0,0,.5);
+      }
     }
 
-    /* ===========================
-       Global styles
-       =========================== */
+    /* ===========================================================
+       Grundlagen
+       =========================================================== */
     *{box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%}
     body{
-      font-family: "Segoe UI", Roboto, Arial, sans-serif;
       margin:0;
-      background:linear-gradient(180deg,var(--bg),#eaf8ef 60%);
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      background:var(--bg);
       color:var(--text);
       -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      padding-bottom:48px;
-    }
-    header{
-      background: linear-gradient(135deg,var(--accent-1),var(--accent-2));
-      color: white;
-      padding:28px 16px;
-      text-align:center;
-      box-shadow:var(--shadow);
-    }
-    header h1{margin:0;font-size:2.1rem;letter-spacing:1px}
-    header p{margin:8px 0 0;color:rgba(255,255,255,0.92)}
-
-    .container{
-      max-width:1200px;margin:24px auto;padding:0 16px;
+      padding-bottom:calc(24px + env(safe-area-inset-bottom));
     }
 
-    .panel{
-      background:var(--card-bg);
-      border-radius:12px;
-      padding:16px;
-      box-shadow:var(--shadow);
-      border:1px solid var(--border);
-      margin-bottom:18px;
+    /* Buttons ------------------------------------------------- */
+    .btn{
+      border:none;cursor:pointer;font-family:inherit;font-weight:700;
+      border-radius:12px;padding:11px 16px;font-size:.95rem;white-space:nowrap;
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--accent-ink);
+      box-shadow:var(--shadow-sm);transition:transform .1s ease,filter .15s ease;
     }
+    .btn:hover{filter:brightness(1.04)}
+    .btn:active{transform:translateY(1px)}
+    .btn-sm{padding:8px 12px;font-size:.9rem;border-radius:10px}
+    .btn-ghost{background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:none}
 
-    /* controls row */
-    .controls{
-      display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
-      margin-bottom:12px;
+    .icon-btn{
+      flex:none;width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;
+      border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);
+      font-size:1.15rem;line-height:1;cursor:pointer;transition:background .15s,transform .1s,filter .15s;
     }
-    .left-controls{display:flex;gap:10px;align-items:center}
-    .right-controls{display:flex;gap:10px;align-items:center}
+    .icon-btn:hover{background:var(--surface-2)}
+    .icon-btn:active{transform:translateY(1px)}
+    .icon-btn:disabled{opacity:.35;cursor:default}
+    .icon-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--accent-ink);border-color:transparent}
+    .icon-btn.add-btn{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--accent-ink);border-color:transparent;font-size:1.4rem}
 
-    input[type=number], input[type=text], textarea, select{
-      font-size:1rem;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--glass);color:var(--text);
-      box-shadow:0 2px 6px rgba(0,0,0,0.03);
+    /* ===========================================================
+       Sticky-Kopfleiste (Zahleneingabe immer erreichbar)
+       =========================================================== */
+    .app-header{
+      position:sticky;top:0;z-index:50;
+      background:var(--surface);
+      border-bottom:1px solid var(--border);
+      padding:calc(10px + env(safe-area-inset-top)) 12px 10px;
+      box-shadow:var(--shadow-sm);
     }
-    input[type=number]{width:160px;text-align:center}
-    textarea{width:100%;min-height:120px;border-radius:8px}
-
-    button{
-      background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
-      color:white;border: none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;
-      box-shadow:var(--shadow);transition:transform .12s ease, box-shadow .12s;
+    @supports (backdrop-filter:blur(2px)){
+      .app-header{background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(12px)}
     }
-    button.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
-    button:hover{transform:translateY(-3px)}
-    button.small{padding:8px 10px;font-size:.95rem;border-radius:8px}
+    .app-header-inner{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+    .header-row{display:flex;align-items:center;gap:8px}
 
-    /* drawn area */
-    .drawn-wrap{display:flex;flex-direction:column;gap:10px}
-    .drawn-list{display:flex;flex-wrap:wrap;gap:8px}
+    .brand{display:flex;align-items:center;gap:8px;font-weight:800;flex:none}
+    .brand-badge{
+      width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--accent-ink);font-size:1.1rem;
+    }
+    .brand-name{font-size:1.05rem;letter-spacing:.2px}
+
+    .entry{flex:1;min-width:0}
+    .entry form{display:flex;gap:8px;min-width:0}
+    .entry input{
+      flex:1;min-width:0;font-size:1.05rem;padding:10px 14px;border-radius:12px;
+      border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:inherit;
+      -moz-appearance:textfield;appearance:textfield;
+    }
+    .entry input::-webkit-inner-spin-button,.entry input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+    .entry input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+
+    /* Dropdown-Menü ------------------------------------------- */
+    .menu{position:relative;flex:none}
+    .menu-panel{
+      position:absolute;right:0;top:calc(100% + 8px);z-index:60;min-width:230px;display:none;
+      background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-md);padding:6px;
+    }
+    .menu-panel.open{display:block;animation:pop .12s ease}
+    .menu-panel.left{right:auto;left:0}
+    .menu-item{
+      display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;
+      background:transparent;border:none;color:var(--text);font-family:inherit;font-size:.95rem;font-weight:600;
+      padding:10px 12px;border-radius:10px;
+    }
+    .menu-item:hover{background:var(--surface-2)}
+    .menu-item:disabled{opacity:.4;cursor:default}
+    .menu-item.danger{color:var(--danger)}
+    .menu-sep{height:1px;background:var(--border);margin:6px 6px}
+    @keyframes pop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+    /* Fortschrittsbalken -------------------------------------- */
+    .progress{display:flex;align-items:center;gap:10px}
+    .progress-track{flex:1;height:8px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);overflow:hidden}
+    .progress-fill{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .3s ease}
+    .progress-label{font-size:.85rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+    .progress-label b{color:var(--text)}
+
+    /* ===========================================================
+       Inhalt
+       =========================================================== */
+    .content{max-width:1100px;margin:16px auto;padding:0 12px;display:flex;flex-direction:column;gap:16px}
+    .section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:14px}
+    .section.compact{padding:11px 14px}
+    .section.compact .section-head{margin-bottom:8px}
+    .section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+    .section-title{margin:0;font-size:1rem;font-weight:800;display:flex;align-items:center;gap:8px}
+    .count-badge{font-size:.8rem;color:var(--muted);font-weight:700}
+    .head-actions{display:flex;align-items:center;gap:8px}
+
+    /* Ziehungs-Übersicht (kompakt, eine flache Zeile) --------- */
+    .draw-board{display:flex;flex-wrap:wrap;gap:5px 12px;align-items:center}
+    .draw-group{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
+    .draw-group-letter{font-weight:800;color:var(--accent);font-size:.82rem;letter-spacing:.03em}
+    .draw-group.empty .draw-group-letter{color:var(--muted);opacity:.55}
+    .draw-dash{color:var(--muted);opacity:.5;font-size:.82rem}
     .drawn-num{
-      padding:6px 10px;border-radius:999px;background:linear-gradient(180deg,var(--accent-1),var(--accent-2));color:#fff;font-weight:700;cursor:pointer;
-      box-shadow:0 6px 14px rgba(30,90,60,0.12);transition:transform .15s, box-shadow .15s;
+      padding:3px 9px;border-radius:8px;border:none;cursor:pointer;
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--accent-ink);
+      font-weight:800;font-size:.85rem;font-variant-numeric:tabular-nums;transition:filter .15s,transform .1s;
     }
-    .drawn-num:hover{transform:scale(1.08);box-shadow:0 10px 26px rgba(30,90,60,0.18)}
-    .drawn-stats{font-size:.95rem;color:var(--muted)}
+    .drawn-num:hover{filter:brightness(1.06)}
+    .drawn-num:active{transform:scale(.94)}
+    .draw-hint{margin-top:8px;font-size:.8rem;color:var(--muted)}
 
-    /* cards grid */
-    .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:12px}
-    .card{
-      background:var(--card-bg);border-radius:12px;padding:12px;border:1px solid var(--border);position:relative;
-      transition:transform .14s, box-shadow .14s;overflow:hidden;
+    /* Analyse (Pfad-Segmente + Sortierung) -------------------- */
+    .analysis{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-bottom:12px}
+    .seg-group{display:flex;align-items:center;gap:8px;min-width:0}
+    .seg-label{font-size:.85rem;color:var(--muted);font-weight:700;white-space:nowrap}
+    .seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:3px;gap:2px;max-width:100%;overflow-x:auto}
+    .seg button{
+      border:none;background:transparent;color:var(--text);font-family:inherit;font-weight:700;font-size:.85rem;
+      padding:6px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s;
     }
-    .card:hover{transform:translateY(-6px);box-shadow:0 20px 50px rgba(0,0,0,0.08)}
-    .card .card-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-    .card .card-name{flex:1;padding:6px 10px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted)}
-    .card .card-name:focus{outline:none;border-color:var(--border);background:transparent;color:var(--text)}
-    .delete-btn{position:absolute;top:10px;right:10px;border-radius:10px;padding:6px 8px;background:var(--danger);box-shadow:none;color:white;border:none;display:none}
-    .card.editable .delete-btn{display:block}
+    .seg button.active{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--accent-ink);box-shadow:var(--shadow-sm)}
+    .toggle-chip{
+      display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;font-weight:700;font-size:.85rem;
+      padding:7px 13px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);
+    }
+    .toggle-chip.active{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--accent-ink);border-color:transparent}
 
-    .bingo-table{width:100%;border-collapse:collapse}
-    .bingo-table th{color:var(--accent-1);font-weight:700;padding-bottom:6px}
-    .bingo-table td{padding:6px;text-align:center}
-    /* IMPORTANT: use CSS variable for cell size and ensure input fits */
+    /* Geist-Farb-Legende -------------------------------------- */
+    .ghost-legend{display:none;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:0 0 12px;font-size:.8rem;color:var(--muted)}
+    .ghost-legend.show{display:flex}
+    .ghost-legend span{display:inline-flex;align-items:center;gap:6px}
+    .ghost-legend i{width:16px;height:16px;border-radius:5px;border:2px dashed #000;display:inline-block}
+    .ghost-legend .sw0{border-color:#2e8b57}
+    .ghost-legend .sw1{border-color:#3b82f6}
+    .ghost-legend .sw2{border-color:#f59e0b}
+    .ghost-legend .swx{border-color:#a855f7}
+
+    /* Lose-Grid ----------------------------------------------- */
+    .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:14px}
+    .card{position:relative;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;overflow:hidden}
+    .card-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+    .card-name{
+      flex:1;min-width:0;padding:7px 10px;border-radius:10px;border:1px solid transparent;background:transparent;
+      color:var(--muted);font-family:inherit;font-size:.95rem;
+    }
+    .card-name:focus{outline:none;border-color:var(--accent);background:var(--surface);color:var(--text)}
+    .card.editable .card-name{border-color:var(--border);background:var(--surface);color:var(--text)}
+    .bingo-msg{
+      display:none;flex:none;padding:4px 10px;border-radius:999px;font-weight:800;font-size:.7rem;white-space:nowrap;
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--accent-ink);
+    }
+    .delete-btn{
+      flex:none;width:34px;height:34px;border-radius:10px;border:none;cursor:pointer;display:none;
+      align-items:center;justify-content:center;background:var(--danger);color:#fff;font-size:.95rem;
+    }
+    .card.editable .delete-btn{display:inline-flex}
+
+    .bingo-table{width:100%;border-collapse:separate;border-spacing:0}
+    .bingo-table th{color:var(--muted);font-weight:800;font-size:.78rem;letter-spacing:.06em;padding-bottom:6px}
+    .bingo-table td{padding:3px;text-align:center}
     .bingo-cell{
-      width: var(--cell-size);
-      height: var(--cell-size);
-      border-radius:10px;
-      border:1px solid var(--border);
-      background:transparent;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      margin:2px auto;
-      transition:background .18s,transform .12s;
-      box-sizing:border-box;
+      width:var(--cell-size);height:var(--cell-size);border-radius:11px;border:1px solid var(--border);
+      background:var(--surface);display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative;
+      transition:background .15s,border-color .15s;
     }
-
     .bingo-cell input{
-      display:block;
-      width:100%;
-      height:100%;
-      padding:0;
-      margin:0;
-      border:0;
-      outline: none;
-      background: transparent;
-      text-align:center;
-      font-weight:700;
-      font-size: calc(var(--cell-size) * 0.38); /* responsive font-size */
-      line-height: calc(var(--cell-size) * 0.92);      /* vertical centering */
-      box-sizing:border-box;
-      color:var(--text);
-      -webkit-appearance: none;
-      -moz-appearance: textfield;
-      appearance: none;
+      width:100%;height:100%;padding:0;border:0;outline:none;background:transparent;text-align:center;
+      font-weight:800;font-size:calc(var(--cell-size)*.4);color:var(--text);font-family:inherit;
+      -moz-appearance:textfield;appearance:textfield;
+    }
+    .bingo-cell input::-webkit-inner-spin-button,.bingo-cell input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+    .bingo-cell.marked{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent}
+    .bingo-cell.marked input{color:var(--accent-ink)}
+    .bingo-cell.invalid{background:rgba(224,90,77,.14);border-color:var(--danger)}
+    .bingo-cell.invalid input{color:var(--danger)}
+
+    /* Geist-Pfad: jede Linie eine Farbe, Kreuzungen extra ----- */
+    .bingo-cell.ghost::after{
+      content:'';position:absolute;inset:0;border:2px dashed var(--ghost-color,var(--accent));border-radius:11px;
+      pointer-events:none;box-shadow:0 0 10px var(--ghost-glow,rgba(46,139,87,.4));animation:glow 1.6s ease-in-out infinite;
+    }
+    .bingo-cell.ghost-0{--ghost-color:#2e8b57;--ghost-glow:rgba(46,139,87,.45)}
+    .bingo-cell.ghost-1{--ghost-color:#3b82f6;--ghost-glow:rgba(59,130,246,.45)}
+    .bingo-cell.ghost-2{--ghost-color:#f59e0b;--ghost-glow:rgba(245,158,11,.45)}
+    .bingo-cell.ghost-x{--ghost-color:#a855f7;--ghost-glow:rgba(168,85,247,.5)}
+    @keyframes glow{0%,100%{opacity:.55}50%{opacity:1}}
+
+    /* Chancen je Los ------------------------------------------ */
+    .card-prob{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
+    .card-prob .pc{display:flex;flex-direction:column;gap:2px}
+    .card-prob .pc small{font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+    .card-prob .pc b{font-size:1.02rem;color:var(--accent);font-variant-numeric:tabular-nums}
+
+    /* Status je Los + Hervorhebung von (Fast-)Treffern --------- */
+    .card-status{margin-top:10px;font-size:.85rem;font-weight:700;color:var(--muted)}
+    .card-status.bingo{color:var(--accent)}
+    .card-status.close{color:#e6890b}
+    .card.is-bingo{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent),0 0 24px var(--ring)}
+    .card.is-close{border-color:#f0a52a}
+
+    /* Zahlenfeld (klickbare 1–75, ein-/ausklappbar) ------------ */
+    .number-pad{display:none;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+    .number-pad.open{display:grid}
+    .pad-col{display:flex;flex-direction:column;gap:4px}
+    .pad-col-letter{text-align:center;font-weight:800;color:var(--accent);font-size:.8rem;margin-bottom:2px}
+    .pad-num{
+      padding:7px 0;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);
+      font-weight:700;font-size:.82rem;font-variant-numeric:tabular-nums;cursor:pointer;transition:filter .12s,transform .1s;
+    }
+    .pad-num:hover:not(:disabled){filter:brightness(1.06)}
+    .pad-num:active:not(:disabled){transform:scale(.93)}
+    .pad-num.drawn{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--accent-ink);border-color:transparent}
+    .pad-num:disabled{opacity:.35;cursor:default}
+
+    /* Toast-Meldungen ----------------------------------------- */
+    .toast-wrap{position:fixed;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px;z-index:2000;pointer-events:none;padding:0 12px}
+    .toast{
+      max-width:90vw;text-align:center;background:var(--text);color:var(--surface);padding:10px 16px;border-radius:999px;
+      font-size:.9rem;font-weight:700;box-shadow:var(--shadow-md);opacity:0;transform:translateY(10px);animation:toastIn .18s ease forwards;
+    }
+    .toast.error{background:var(--danger);color:#fff}
+    .toast.warn{background:#eb9c12;color:#20140a}
+    .toast.success{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--accent-ink)}
+    .toast.hide{animation:toastOut .25s ease forwards}
+    @keyframes toastIn{to{opacity:1;transform:none}}
+    @keyframes toastOut{to{opacity:0;transform:translateY(10px)}}
+
+    /* Shake bei ungültiger Eingabe ----------------------------- */
+    @keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+    .shake{animation:shake .4s}
+
+    /* Leerzustand --------------------------------------------- */
+    .empty-state{grid-column:1/-1;text-align:center;padding:34px 16px;display:flex;flex-direction:column;align-items:center;gap:6px}
+    .empty-state .emoji{font-size:2.4rem}
+    .empty-state p{margin:0}
+    .empty-state .muted{color:var(--muted);font-size:.9rem}
+    .empty-state .btn{margin-top:12px}
+
+    /* Modal (auf dem Handy als Bottom-Sheet) ------------------ */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(8,18,14,.55);display:none;align-items:flex-end;justify-content:center;z-index:1000}
+    .modal{
+      background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:20px 20px 0 0;
+      padding:18px;width:100%;max-width:560px;box-shadow:var(--shadow-md);max-height:88vh;overflow:auto;
+      padding-bottom:calc(18px + env(safe-area-inset-bottom));
+    }
+    .modal h3{margin:0 0 12px}
+    .modal p{color:var(--muted);font-size:.92rem;margin:0 0 10px}
+    .modal .close{float:right;background:transparent;border:none;font-size:1.3rem;line-height:1;color:var(--muted);cursor:pointer}
+    .modal .modal-actions{display:flex;gap:8px;margin-top:12px}
+    textarea{
+      width:100%;min-height:150px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);
+      color:var(--text);font-family:inherit;font-size:.95rem;padding:10px;resize:vertical;
+    }
+    .help-list{display:grid;gap:10px}
+    .help-list div{font-size:.92rem;line-height:1.4}
+    @media(min-width:640px){
+      .modal-backdrop{align-items:center;padding:16px}
+      .modal{border-radius:20px}
     }
 
-    /* hide number input arrows on webkit/blink */
-    input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-    input[type=number] { -moz-appearance: textfield; }
+    .footer{max-width:1100px;margin:6px auto 0;padding:0 12px;text-align:center;color:var(--muted);font-size:.78rem}
+    .footer a{color:var(--muted);text-decoration:none}
+    .footer a:hover{text-decoration:underline}
 
-    .bingo-cell.marked{background:linear-gradient(180deg,var(--accent-2),var(--accent-1));color:white;border-color:transparent;box-shadow:0 8px 18px rgba(30,90,60,0.12)}
-    .bingo-cell.invalid{background:linear-gradient(180deg,#fff4f4,#ffecec);border-color:var(--danger);color:var(--danger)}
-    .bingo-msg{position:absolute;top:10px;left:12px;padding:6px 10px;border-radius:8px;background:var(--accent-2);color:#fff;font-weight:800;box-shadow:var(--shadow);display:none}
-
-    /* helper icons/info */
-    .meta{font-size:0.8rem;color:var(--muted)}
-    .github-link {
-        color:var(--muted);
-        text-decoration: none;
-        transition: color 0.2s ease;
+    /* ===========================================================
+       Responsive
+       =========================================================== */
+    @media(max-width:600px){
+      :root{--cell-size:44px}
+      .brand-name{display:none}
+      .cards-grid{grid-template-columns:1fr}
     }
-    .github-link:hover {
-        color:var(--muted);
-        text-decoration: underline;
+    @media(max-width:360px){
+      :root{--cell-size:40px}
     }
-    .toolbar{display:flex;gap:8px;align-items:center}
-
-    /* modal */
-    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:1000}
-    .modal{background:var(--card-bg);padding:18px;border-radius:12px;max-width:720px;width:96%;border:1px solid var(--border)}
-    .modal h3{margin-top:0}
-    .modal .cols{display:grid;grid-template-columns:1fr 320px;gap:12px}
-    .modal .close{float:right;background:transparent;border:0;font-size:1.2rem;color:var(--muted);cursor:pointer}
-
-    /* small screens */
-    @media(max-width:920px){
-      .controls{flex-direction:column;align-items:stretch}
-      .modal .cols{grid-template-columns:1fr}
-      :root{ --cell-size:48px; }
-      .bingo-cell input{ font-size: calc(var(--cell-size) * 0.38); line-height: calc(var(--cell-size)); }
-    }
-    @media(max-width:420px){
-      :root{ --cell-size:40px; }
-      .bingo-cell input{ font-size: calc(var(--cell-size) * 0.38); line-height: calc(var(--cell-size)); }
-      input[type=number]{ width: 120px; }
-    }
-
-    /* little animations */
-    @keyframes pulse {0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
   </style>
 </head>
 <body>
-  <header>
-    <h1>Bingo-Lose Prüfer</h1>
-  </header>
+  <!-- ===== KOPFLEISTE (sticky) ===== -->
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div class="header-row">
+        <div class="brand"><span class="brand-badge">🎱</span><span class="brand-name">Bingo-Prüfer</span></div>
 
-  <main class="container">
-    <!-- CONTROLS -->
-    <section class="panel">
-      <div class="controls">
-        <div class="left-controls">
+        <div class="entry">
           <form id="drawForm" onsubmit="return false;">
-            <input id="drawInput" type="number" min="1" max="75" placeholder="Gezogene Zahl eingeben (Enter)">
+            <input id="drawInput" type="number" inputmode="numeric" min="1" max="75" placeholder="Zahl 1–75 eintragen …" aria-label="Gezogene Zahl eintragen">
+            <button type="submit" class="icon-btn add-btn" title="Zahl hinzufügen" aria-label="Zahl hinzufügen">＋</button>
           </form>
-          <button id="randomDrawBtn" class="small" title="Zieht zufällig eine Zahl (schnell)">🎲 Zufallsziehung</button>
-          <button id="clearDrawsBtn" class="small ghost" title="Alle gezogenen Zahlen löschen">🧹 Leeren</button>
-          <button id="undoBtn" class="small ghost" title="Undo">↶ Rückgängig</button>
-          <button id="redoBtn" class="small ghost" title="↷ Wieder">↷ Wieder</button>
-          <button id="toggleAutoBtn" class="small" title="Automatikmodus starten/stoppen">▶️ Automatik starten</button>
-          <span id="autoRoundCount" class="meta" style="margin-left:20px">Runden: 0</span>
         </div>
 
-        <div class="right-controls">
-          <div class="toolbar">
-            <span class="meta">Gezogen: <strong id="drawCount">0</strong>/22</span>
-            <span class="meta" style="margin-left:12px">B: <strong id="countB">0</strong> I: <strong id="countI">0</strong> N: <strong id="countN">0</strong> G: <strong id="countG">0</strong> O: <strong id="countO">0</strong></span>
-            <button id="helpBtn" class="small ghost" title="Hilfe">❓ Hilfe</button>
-            <button id="exportBtn" class="small" title="Zum lokalen JSON exportieren">📥 Export</button>
-            <button id="importBtn" class="small ghost" title="JSON laden">📤 Import</button>
-            <input id="fileInput" type="file" accept=".json" style="display:none">
+        <button id="undoBtn" class="icon-btn" title="Rückgängig">↶</button>
+
+        <div class="menu">
+          <button id="menuBtn" class="icon-btn" title="Menü" aria-haspopup="true">⋯</button>
+          <div id="menuPanel" class="menu-panel" role="menu">
+            <button id="redoBtn" class="menu-item">↷ Wiederholen</button>
+            <button id="randomDrawBtn" class="menu-item">🎲 Zufallszahl ziehen</button>
+            <div class="menu-sep"></div>
+            <button id="exportBtn" class="menu-item">📥 Spiel exportieren</button>
+            <button id="importBtn" class="menu-item">📤 Spiel importieren</button>
+            <div class="menu-sep"></div>
+            <button id="clearDrawsBtn" class="menu-item">🧹 Gezogene Zahlen leeren</button>
+            <button id="clearAllCardsBtn" class="menu-item danger">🗑️ Alle Lose löschen</button>
+            <button id="resetBtn" class="menu-item danger">♻️ Alles zurücksetzen</button>
+            <div class="menu-sep"></div>
+            <button id="helpBtn" class="menu-item">❓ Hilfe</button>
           </div>
         </div>
       </div>
 
-      <div class="drawn-wrap">
-        <div class="drawn-list" id="drawnList" aria-live="polite"></div>
-        <div class="drawn-stats meta" id="drawnHint">Klicke eine Zahl, um sie zu entfernen. Max. 22 Zahlen.</div>
+      <div class="progress">
+        <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
+        <span class="progress-label"><b id="drawCount">0</b>/22 gezogen</span>
       </div>
+    </div>
+  </header>
+  <input id="fileInput" type="file" accept=".json" style="display:none">
+
+  <main class="content">
+    <!-- ===== GEZOGENE ZAHLEN ===== -->
+    <section class="section compact">
+      <div class="section-head">
+        <h2 class="section-title">Gezogene Zahlen</h2>
+        <button id="padToggle" class="icon-btn" title="Zahlenfeld ein-/ausblenden" aria-label="Zahlenfeld ein-/ausblenden">🔢</button>
+      </div>
+      <div class="draw-board" id="drawnList" aria-live="polite"></div>
+      <div class="draw-hint" id="drawnHint">Noch keine Zahl gezogen – oben eintragen.</div>
+      <div id="numberPad" class="number-pad" aria-label="Zahlenfeld 1 bis 75"></div>
     </section>
 
-    <!-- CARDS -->
-    <section class="panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <h2 style="margin:0">Bingo-Lose</h2>
-        <div style="display:flex;gap:8px">
-          <button id="addCardBtn" class="small">➕ Neues Los</button>
-          <button id="modeToggle" class="small" title="Lose bearbeiten">🛠️ Lose bearbeiten</button>
-          <button id="textImportBtn" class="small ghost">📝 Text-Import</button>
-          <button id="clearAllCardsBtn" class="small ghost" title="Alle Lose löschen">🗑️ Alle löschen</button>
+    <!-- ===== LOSE ===== -->
+    <section class="section">
+      <div class="section-head">
+        <h2 class="section-title">Lose <span class="count-badge" id="cardCount"></span></h2>
+        <div class="head-actions">
+          <div class="menu">
+            <button id="addCardBtn" class="btn btn-sm" aria-haspopup="true">＋ Neues Los ▾</button>
+            <div id="addMenu" class="menu-panel left" role="menu">
+              <button id="addBlankBtn" class="menu-item">🆕 Leeres Los</button>
+              <button id="textImportBtn" class="menu-item">📝 Los aus Text</button>
+            </div>
+          </div>
+          <button id="modeToggle" class="icon-btn" title="Lose bearbeiten">✏️</button>
         </div>
+      </div>
+
+      <div class="analysis">
+        <div class="seg-group">
+          <span class="seg-label">Bingo-Pfad</span>
+          <div class="seg" id="pathSeg" role="tablist">
+            <button data-mode="" class="active" title="Keinen Pfad anzeigen">Aus</button>
+            <button data-mode="single" title="Wahrscheinlichster Weg zu einem einfachen Bingo">Einfach</button>
+            <button data-mode="double" title="Wahrscheinlichster Weg zu einem Doppel-Bingo">Doppel</button>
+            <button data-mode="triple" title="Wahrscheinlichster Weg zu einem Dreifach-Bingo">Dreifach</button>
+          </div>
+        </div>
+        <button id="sortBtn" class="toggle-chip" title="Lose automatisch nach Nähe zum Bingo sortieren (wenigste fehlende Zahlen zuerst)">↕ Nach Nähe zum Bingo</button>
+      </div>
+
+      <div id="ghostLegend" class="ghost-legend">
+        <span data-need="1"><i class="sw0"></i>Linie 1</span>
+        <span data-need="2"><i class="sw1"></i>Linie 2</span>
+        <span data-need="3"><i class="sw2"></i>Linie 3</span>
+        <span data-need="2"><i class="swx"></i>Kreuzung</span>
       </div>
 
       <div id="cardsGrid" class="cards-grid"></div>
     </section>
 
-    <!-- FOOTER ACTIONS -->
-    <section style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
-      <button id="resetBtn" class="small ghost">♻️ Zurücksetzen</button>
-      <div class="meta" style="margin-left:auto">Version: <strong>1.0</strong> <a href="https://github.com/ultrahochfreq/bingo" target="_blank" class="github-link">GitHub Repository</a></div>
-    </section>
+    <footer class="footer">
+      Bingo-Prüfer · v1.0 · <a href="https://github.com/ultrahochfreq/bingo" target="_blank" rel="noopener">GitHub</a>
+    </footer>
   </main>
 
-  <!-- TEXT IMPORT MODAL -->
+  <!-- ===== TEXT-IMPORT MODAL ===== -->
   <div id="textModalBackdrop" class="modal-backdrop">
     <div class="modal" role="dialog" aria-modal="true">
-      <button class="close" id="closeTextModalBtn">✕</button>
-      <h3>Text-Import für Bingo-Los</h3>
-      <p>Füge Zahlen ein (z. B. aus Foto-OCR). System versucht Spalten B/I/N/G/O zuzuordnen.</p>
-      <div style="margin-top:8px">
-        <textarea id="textImportArea" placeholder="Beispiel:
-B_1
-I_1
-N_1
-G_1
-O_1
-B_2
-I_2
-..."></textarea>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button id="processTextBtn">Los erstellen</button>
-        <button id="cancelTextBtn" class="ghost">Abbrechen</button>
+      <button class="close" id="closeTextModalBtn" aria-label="Schließen">✕</button>
+      <h3>Los per Text importieren</h3>
+      <p>Zahlen einfügen (z. B. aus Foto-OCR). Die Spalten B/I/N/G/O werden automatisch zugeordnet.</p>
+      <textarea id="textImportArea" placeholder="Beispiel:&#10;3 12 8 5 14&#10;16 22 19 28 25&#10;..."></textarea>
+      <div class="modal-actions">
+        <button id="processTextBtn" class="btn">Los erstellen</button>
+        <button id="cancelTextBtn" class="btn btn-ghost">Abbrechen</button>
       </div>
     </div>
   </div>
 
-  <!-- HELP / SHORTCUTS MODAL -->
+  <!-- ===== HILFE MODAL ===== -->
   <div id="helpModalBackdrop" class="modal-backdrop">
     <div class="modal" role="dialog" aria-modal="true">
-      <button class="close" id="closeHelpBtn">✕</button>
+      <button class="close" id="closeHelpBtn" aria-label="Schließen">✕</button>
       <h3>Hilfe</h3>
-      <div style="display:grid;gap:8px">
-        <div><strong>Max. gezogene Zahlen</strong>: 22</div>
+      <div class="help-list">
+        <div><strong>Zahlen eintragen:</strong> Oben die gezogene Zahl (1–75) eingeben und mit Enter oder ＋ bestätigen. Max. 22 Zahlen.</div>
+        <div><strong>Chance je Los:</strong> Wahrscheinlichkeit auf mind. 1 (Einfach), 2 (Doppel) bzw. 3 (Dreifach) Bingo-Linien, wenn insgesamt 22 Zahlen gezogen werden.</div>
+        <div><strong>Bingo-Pfad:</strong> zeigt auf jedem Los als farbigen Geist den wahrscheinlichsten Weg – jede Linie eine eigene Farbe, Kreuzungen lila.</div>
+        <div><strong>Nach Nähe zum Bingo:</strong> ordnet die Lose nach den wenigsten noch fehlenden Zahlen – erst bis Einfach-, dann Doppel-, dann Dreifach-Bingo; bei Gleichstand entscheidet die Chance.</div>
       </div>
     </div>
   </div>
@@ -318,12 +478,20 @@ I_2
     let redoStack = [];
     const ACTION_LIMIT = 200;
 
+    // Analyse-Zustand
+    let sortEnabled = false;              // Lose nach Bingo-Chance sortieren
+    let activePathMode = null;            // 'single' | 'double' | 'triple' | null
+
     // DOM refs
     const drawForm = document.getElementById('drawForm');
     const drawInput = document.getElementById('drawInput');
     const drawnList = document.getElementById('drawnList');
+    const drawnHint = document.getElementById('drawnHint');
+    const padToggle = document.getElementById('padToggle');
+    const numberPad = document.getElementById('numberPad');
     const drawCount = document.getElementById('drawCount');
-    const counts = { B:document.getElementById('countB'), I:document.getElementById('countI'), N:document.getElementById('countN'), G:document.getElementById('countG'), O:document.getElementById('countO') };
+    const progressFill = document.getElementById('progressFill');
+    const cardCount = document.getElementById('cardCount');
 
     const addCardBtn = document.getElementById('addCardBtn');
     const textImportBtn = document.getElementById('textImportBtn');
@@ -336,6 +504,11 @@ I_2
     const helpBtn = document.getElementById('helpBtn');
     const helpModalBackdrop = document.getElementById('helpModalBackdrop');
     const closeHelpBtn = document.getElementById('closeHelpBtn');
+
+    const menuBtn = document.getElementById('menuBtn');
+    const menuPanel = document.getElementById('menuPanel');
+    const addMenu = document.getElementById('addMenu');
+    const addBlankBtn = document.getElementById('addBlankBtn');
 
     const textModalBackdrop = document.getElementById('textModalBackdrop');
     const processTextBtn = document.getElementById('processTextBtn');
@@ -350,6 +523,11 @@ I_2
     const resetBtn = document.getElementById('resetBtn');
     const clearAllCardsBtn = document.getElementById('clearAllCardsBtn');
 
+    const pathSeg = document.getElementById('pathSeg');
+    const pathSegBtns = pathSeg.querySelectorAll('button');
+    const sortBtn = document.getElementById('sortBtn');
+    const ghostLegend = document.getElementById('ghostLegend');
+
     // Helpers
     function cloneEmptyGrid(){ return Array.from({length:5}, ()=>Array.from({length:5}, ()=>"")); }
     function getLetterIndex(num){ for (let i=0;i<ranges.length;i++) if (num>=ranges[i].min && num<=ranges[i].max) return i; return -1; }
@@ -357,67 +535,336 @@ I_2
     function pushAction(action){ actionStack.push(action); if (actionStack.length> ACTION_LIMIT) actionStack.shift(); redoStack=[]; updateUndoRedoButtons(); }
     function updateUndoRedoButtons(){ undoBtn.disabled = actionStack.length===0; redoBtn.disabled = redoStack.length===0; }
 
+    // Aufeinanderfolgende Bearbeitungen derselben Zelle/desselben Namens zu
+    // EINER Undo-Aktion zusammenfassen (statt pro Tastendruck).
+    function pushEditCell(cardIdx,row,col,old,neu){
+      const last = actionStack[actionStack.length-1];
+      if (last && last.type==='edit-cell' && last.cardIdx===cardIdx && last.row===row && last.col===col){
+        last.neu = neu; redoStack=[]; updateUndoRedoButtons(); return;
+      }
+      pushAction({type:'edit-cell', cardIdx, row, col, old, neu});
+    }
+    function pushEditName(idx,old,neu){
+      const last = actionStack[actionStack.length-1];
+      if (last && last.type==='edit-card-name' && last.idx===idx){
+        last.neu = neu; redoStack=[]; updateUndoRedoButtons(); return;
+      }
+      pushAction({type:'edit-card-name', idx, old, neu});
+    }
+
+    // Kurze Rückmeldungen (Toast) + Wackeln bei Fehleingabe.
+    let toastWrap = null;
+    function toast(msg, type){
+      if (!toastWrap){ toastWrap = document.createElement('div'); toastWrap.className = 'toast-wrap'; document.body.appendChild(toastWrap); }
+      const t = document.createElement('div');
+      t.className = 'toast' + (type ? ' ' + type : '');
+      t.textContent = msg;
+      toastWrap.appendChild(t);
+      setTimeout(()=>{ t.classList.add('hide'); setTimeout(()=> t.remove(), 250); }, 1900);
+    }
+    function shake(el){ if (!el) return; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+
+    // Ziehung mit Prüfung + Rückmeldung. Gibt true bei Erfolg zurück.
+    function tryDraw(num, opts){
+      opts = opts || {};
+      if (isNaN(num)){ toast('Keine gültige Zahl', 'error'); return false; }
+      if (num < 1 || num > 75){ toast(`Zahl ${num} gibt es nicht (nur 1–75)`, 'error'); return false; }
+      if (allDrawn.includes(num)){ toast(`${num} wurde schon gezogen`, 'warn'); return false; }
+      if (allDrawn.length >= MAX_DRAWS){ toast(`Schon ${MAX_DRAWS} Zahlen gezogen – erst welche entfernen`, 'warn'); return false; }
+      addDraw(num);
+      if (!opts.silent) toast(`${num} gezogen`, 'success');
+      return true;
+    }
+
+    /* ===========================
+       BINGO-WAHRSCHEINLICHKEITEN
+       ===========================
+       Modell: Insgesamt werden MAX_DRAWS Zahlen aus 1..75 (ohne Zurücklegen)
+       gezogen. Aktuell sind allDrawn.length Zahlen gezogen; es folgen noch
+       k = MAX_DRAWS - allDrawn.length Ziehungen aus einem Pool von
+       P = 75 - allDrawn.length verbleibenden Zahlen.
+       Eine Linie (Zeile/Spalte/Diagonale) ist "Bingo", wenn alle 5 Zellen
+       markiert sind. Es gibt 12 Linien.                                       */
+
+    function popcount(x){ let c=0; while(x){ x &= (x-1); c++; } return c; }
+
+    // Wahrscheinlichkeit, dass r bestimmte noch nicht gezogene Zahlen alle
+    // unter den k verbleibenden Ziehungen sind (hypergeometrisch).
+    function hyp(r, k, P){
+      if (r <= 0) return 1;
+      if (r > k) return 0;
+      let p = 1;
+      for (let i=0; i<r; i++) p *= (k - i) / (P - i);
+      return p;
+    }
+
+    // Die 12 Linien als Listen von [row,col].
+    function bingoLines(){
+      const lines = [];
+      for (let r=0;r<5;r++) lines.push([[r,0],[r,1],[r,2],[r,3],[r,4]]);
+      for (let c=0;c<5;c++) lines.push([[0,c],[1,c],[2,c],[3,c],[4,c]]);
+      lines.push([[0,0],[1,1],[2,2],[3,3],[4,4]]);
+      lines.push([[0,4],[1,3],[2,2],[3,1],[4,0]]);
+      return lines;
+    }
+
+    // Berechnet p1/p2/p3 (Chance auf >=1 / >=2 / >=3 Bingos) sowie die
+    // wahrscheinlichsten Pfade (Zell-Indizes) für einfach/doppel/dreifach.
+    function computeCardProb(card){
+      const drawnSet = new Set(allDrawn);
+      const P = 75 - allDrawn.length;
+      const k = Math.max(0, MAX_DRAWS - allDrawn.length);
+      const cellIndex = (r,c) => r*5 + c;
+
+      // Nur "gültige" Linien können überhaupt Bingo werden (alle Zellen
+      // enthalten eine Zahl in der korrekten Spalte).
+      // Wichtig: die "noch fehlenden" Zahlen werden über DISTINKTE Zahlen
+      // gezählt (nicht über Zellen). So verfälscht eine doppelt eingetragene
+      // Zahl im selben Los die Wahrscheinlichkeit nicht mehr (Fix). Jede
+      // distinkte Zahl bekommt ein eigenes Bit (max. 25 Zahlen -> 32-Bit ok).
+      const numBit = new Map();
+      const bitFor = (num) => { if (!numBit.has(num)) numBit.set(num, numBit.size); return numBit.get(num); };
+      const viable = []; // { neededMask (Zahl-Bits), cells:[idx], need:int }
+      bingoLines().forEach(line => {
+        let ok = true, neededMask = 0; const cells = [];
+        for (const [r,c] of line){
+          const raw = card.numbers[r][c];
+          const num = (raw === '' || raw === null || raw === undefined) ? NaN : parseInt(raw,10);
+          if (isNaN(num) || getLetterIndex(num) !== c){ ok = false; break; }
+          cells.push(cellIndex(r,c));
+          if (!drawnSet.has(num)) neededMask |= (1 << bitFor(num));
+        }
+        if (ok) viable.push({ neededMask, cells, need: popcount(neededMask) });
+      });
+
+      const n = viable.length;
+      // S[j] = Summe der Wahrscheinlichkeiten, dass alle Linien einer
+      // j-elementigen Linienmenge gleichzeitig komplett werden.
+      const S = new Array(n+1).fill(0);
+      for (let sub=1; sub < (1<<n); sub++){
+        let union = 0, j = 0;
+        for (let b=0;b<n;b++) if (sub & (1<<b)){ union |= viable[b].neededMask; j++; }
+        S[j] += hyp(popcount(union), k, P);
+      }
+      // Einschluss-/Ausschluss für "mindestens m": P>=m = Σ_{j>=m} (-1)^{j-m} C(j-1,m-1) S_j
+      const clamp = x => Math.min(1, Math.max(0, x));
+      let p1=0,p2=0,p3=0;
+      for (let j=1;j<=n;j++) p1 += (((j-1)&1)? -1:1) * S[j];
+      for (let j=2;j<=n;j++) p2 += (((j-2)&1)? -1:1) * (j-1) * S[j];
+      for (let j=3;j<=n;j++) p3 += (((j-3)&1)? -1:1) * ((j-1)*(j-2)/2) * S[j];
+
+      // Wahrscheinlichste Pfade = Linienkombination mit den wenigsten noch
+      // fehlenden Zahlen (maximiert die gemeinsame Wahrscheinlichkeit).
+      // Zurückgegeben werden die einzelnen Linien (je Linie eine Farbe).
+      const union = (list) => { let m=0; list.forEach(l=> m|=l.neededMask); return m; };
+      let single=[], double=[], triple=[];
+      // need1/need2/need3 = wenigste noch fehlende Zahlen für 1 / 2 / 3 Linien
+      let need1=null, need2=null, need3=null;
+      if (n>=1){
+        let best=viable[0]; for (const l of viable) if (l.need < best.need) best=l;
+        single = [best.cells]; need1 = best.need;
+      }
+      if (n>=2){
+        let bestNeed=Infinity, bestPair=null;
+        for (let a=0;a<n;a++) for (let b=a+1;b<n;b++){
+          const need = popcount(union([viable[a],viable[b]]));
+          if (need < bestNeed){ bestNeed=need; bestPair=[viable[a],viable[b]]; }
+        }
+        double = bestPair.map(l=>l.cells); need2 = bestNeed;
+      }
+      if (n>=3){
+        let bestNeed=Infinity, bestTri=null;
+        for (let a=0;a<n;a++) for (let b=a+1;b<n;b++) for (let d=b+1;d<n;d++){
+          const need = popcount(union([viable[a],viable[b],viable[d]]));
+          if (need < bestNeed){ bestNeed=need; bestTri=[viable[a],viable[b],viable[d]]; }
+        }
+        triple = bestTri.map(l=>l.cells); need3 = bestNeed;
+      }
+
+      return { p1:clamp(p1), p2:clamp(p2), p3:clamp(p3), minNeed:need1, need1, need2, need3, masks:{ single, double, triple } };
+    }
+
+    function formatPct(p){
+      if (p >= 0.995) return '100%';
+      if (p <= 0) return '0%';
+      if (p < 0.005) return '<1%';
+      return Math.round(p*100) + '%';
+    }
+
+    function updateProbDisplay(cardEl, prob){
+      const st = cardEl.querySelector('.card-status');
+      if (st){
+        st.classList.remove('bingo','close');
+        if (prob.minNeed === null){ st.textContent = 'Bingo hier nicht möglich'; }
+        else if (prob.minNeed === 0){ st.textContent = '★ Bingo erreicht!'; st.classList.add('bingo'); }
+        else if (prob.minNeed === 1){ st.textContent = 'Nur noch 1 Zahl bis Bingo'; st.classList.add('close'); }
+        else { st.textContent = `Noch ${prob.minNeed} Zahlen bis Bingo`; }
+      }
+      const el = cardEl.querySelector('.card-prob');
+      if (!el) return;
+      el.innerHTML =
+        `<div class="pc"><small>Einfach</small><b>${formatPct(prob.p1)}</b></div>` +
+        `<div class="pc"><small>Doppel</small><b>${formatPct(prob.p2)}</b></div>` +
+        `<div class="pc"><small>Dreifach</small><b>${formatPct(prob.p3)}</b></div>`;
+    }
+
+    function applyGhost(cells, prob){
+      cells.forEach(w => w.classList.remove('ghost','ghost-0','ghost-1','ghost-2','ghost-x'));
+      if (!activePathMode || !prob) return;
+      const lines = prob.masks[activePathMode] || [];
+      const cellLines = new Map(); // Zell-Index -> Liste der Linien, die sie enthalten
+      lines.forEach((cellArr, li) => cellArr.forEach(idx => {
+        if (!cellLines.has(idx)) cellLines.set(idx, []);
+        cellLines.get(idx).push(li);
+      }));
+      cellLines.forEach((lis, idx) => {
+        const w = cells[idx];
+        if (!w) return;
+        w.classList.add('ghost');
+        w.classList.add(lis.length > 1 ? 'ghost-x' : 'ghost-' + lis[0]);
+      });
+    }
+
+    // Zentrale Aktualisierung nach Ziehungen/Struktur-Änderungen:
+    // Chancen berechnen, optional sortieren, neu rendern.
+    function rerender(){
+      cards.forEach(c => c._prob = computeCardProb(c));
+      if (sortEnabled && !editMode) cards.sort((a,b)=>{
+        const A = a._prob, B = b._prob;
+        const need = v => (v === null || v === undefined) ? Infinity : v;
+        // Nähe zum Bingo: wenigste fehlende Zahlen zuerst –
+        // erst für Einfach-, dann Doppel-, dann Dreifach-Bingo.
+        let d = need(A.need1) - need(B.need1); if (d) return d;
+        d = need(A.need2) - need(B.need2);     if (d) return d;
+        d = need(A.need3) - need(B.need3);     if (d) return d;
+        // alles gleich weit weg: höhere Chance zuerst
+        return B.p1 - A.p1;
+      });
+      renderCards();
+      persist();
+    }
+
     // Rendering
     function updateDrawStats(){
       drawCount.textContent = allDrawn.length;
-      counts.B.textContent = drawnNumbers[0].length;
-      counts.I.textContent = drawnNumbers[1].length;
-      counts.N.textContent = drawnNumbers[2].length;
-      counts.G.textContent = drawnNumbers[3].length;
-      counts.O.textContent = drawnNumbers[4].length;
+      const pct = Math.min(100, (allDrawn.length / MAX_DRAWS) * 100);
+      if (progressFill) progressFill.style.width = pct + '%';
     }
 
     function updateDrawnList(){
       drawnList.innerHTML = '';
       ranges.forEach((r, i) => {
-        const span = document.createElement('span');
-        span.style.marginRight = "12px";
-        span.innerHTML = `<strong style="color:var(--accent-1)">${r.letter}:</strong>&nbsp;`;
         const nums = drawnNumbers[i].slice().sort((a,b)=>a-b);
-        nums.forEach(n => {
-          const b = document.createElement('button');
-          b.className = 'drawn-num';
-          b.dataset.num = n;
-          b.title = 'Klicken zum Entfernen';
-          b.textContent = n;
-          span.appendChild(b);
-        });
-        drawnList.appendChild(span);
+        const g = document.createElement('div');
+        g.className = 'draw-group' + (nums.length ? '' : ' empty');
+
+        const lab = document.createElement('span');
+        lab.className = 'draw-group-letter';
+        lab.textContent = r.letter;
+        g.appendChild(lab);
+
+        if (nums.length){
+          nums.forEach(n => {
+            const b = document.createElement('button');
+            b.className = 'drawn-num';
+            b.dataset.num = n;
+            b.title = 'Zum Entfernen antippen';
+            b.textContent = n;
+            g.appendChild(b);
+          });
+        } else {
+          const d = document.createElement('span');
+          d.className = 'draw-dash';
+          d.textContent = '–';
+          g.appendChild(d);
+        }
+        drawnList.appendChild(g);
       });
+      if (drawnHint) drawnHint.style.display = allDrawn.length ? 'none' : 'block';
+      updateNumberPad();
       updateDrawStats();
+    }
+
+    // Klickbares Zahlenfeld 1–75 (Alternative zur Tastatureingabe)
+    function renderNumberPad(){
+      numberPad.innerHTML = '';
+      ranges.forEach(r => {
+        const col = document.createElement('div');
+        col.className = 'pad-col';
+        const h = document.createElement('div');
+        h.className = 'pad-col-letter';
+        h.textContent = r.letter;
+        col.appendChild(h);
+        for (let n=r.min; n<=r.max; n++){
+          const b = document.createElement('button');
+          b.className = 'pad-num';
+          b.dataset.num = n;
+          b.textContent = n;
+          col.appendChild(b);
+        }
+        numberPad.appendChild(col);
+      });
+    }
+
+    function updateNumberPad(){
+      if (!numberPad.children.length) return;
+      const atMax = allDrawn.length >= MAX_DRAWS;
+      numberPad.querySelectorAll('.pad-num').forEach(b => {
+        const n = parseInt(b.dataset.num,10);
+        const drawn = allDrawn.includes(n);
+        b.classList.toggle('drawn', drawn);
+        b.disabled = !drawn && atMax;
+      });
     }
 
     function renderCards(){
       cardsGrid.innerHTML = '';
+      if (cardCount) cardCount.textContent = cards.length ? cards.length : '';
+
+      if (cards.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = `<div class="emoji">🎟️</div><p>Noch keine Lose angelegt.</p><p class="muted">Erstelle ein Los und trage die Zahlen ein.</p>`;
+        const b = document.createElement('button');
+        b.className = 'btn';
+        b.textContent = '＋ Neues Los';
+        b.addEventListener('click', addBlankCard);
+        empty.appendChild(b);
+        cardsGrid.appendChild(empty);
+        return;
+      }
+
       cards.forEach((card, index) => {
         const c = document.createElement('div');
         c.className = 'card' + (editMode ? ' editable' : '');
         c.dataset.index = index;
 
-        const bingoMsg = document.createElement('div');
-        bingoMsg.className = 'bingo-msg';
-        bingoMsg.id = `bingo-msg-${index}`;
-        c.appendChild(bingoMsg);
-
         const top = document.createElement('div');
         top.className = 'card-top';
+
         const nameInp = document.createElement('input');
         nameInp.className = 'card-name';
         nameInp.value = card.name || '';
-        nameInp.placeholder = editMode ? 'Name des Loses' : '';
+        nameInp.placeholder = editMode ? 'Name des Loses' : (card.name || `Los ${index+1}`);
         nameInp.disabled = !editMode;
         nameInp.addEventListener('input', (e)=>{
           const old = card.name;
           card.name = e.target.value;
-          pushAction({type:'edit-card-name', idx:index, old, neu:card.name});
+          pushEditName(index, old, card.name);
+          persist();
         });
         top.appendChild(nameInp);
+
+        const bingoMsg = document.createElement('div');
+        bingoMsg.className = 'bingo-msg';
+        bingoMsg.id = `bingo-msg-${index}`;
+        top.appendChild(bingoMsg);
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = '🗑';
         deleteBtn.title = 'Los löschen';
-        deleteBtn.addEventListener('click', ()=>{ if (confirm('Los entfernen?')){ const removed = cards.splice(index,1)[0]; pushAction({type:'delete-card', idx:index, card:removed}); renderCards(); }});
+        deleteBtn.addEventListener('click', ()=>{ if (confirm('Los entfernen?')){ const removed = cards.splice(index,1)[0]; pushAction({type:'delete-card', idx:index, card:removed}); rerender(); }});
         top.appendChild(deleteBtn);
 
         c.appendChild(top);
@@ -436,6 +883,7 @@ I_2
             wrapper.className = 'bingo-cell';
             const inp = document.createElement('input');
             inp.type = 'number';
+            inp.inputMode = 'numeric';
             inp.min = ranges[col].min;
             inp.max = ranges[col].max;
             inp.value = (card.numbers && card.numbers[row] && (card.numbers[row][col] !== undefined)) ? card.numbers[row][col] : '';
@@ -445,9 +893,11 @@ I_2
               const v = e.target.value.trim();
               card.numbers[row][col] = v === '' ? '' : (validateBingoCell(v,col) ? parseInt(v,10) : v);
               if (v !== '' && !validateBingoCell(v,col)) wrapper.classList.add('invalid'); else wrapper.classList.remove('invalid');
-              pushAction({type:'edit-cell', cardIdx:index, row, col, old, neu:card.numbers[row][col]});
+              pushEditCell(index, row, col, old, card.numbers[row][col]);
               checkDuplicatesInCard(index);
+              card._prob = computeCardProb(card);
               updateCardMarks(index);
+              persist();
             });
             inp.addEventListener('blur', (e)=>{
               const v = e.target.value.trim();
@@ -464,6 +914,15 @@ I_2
         }
 
         c.appendChild(table);
+
+        const statusDiv = document.createElement('div');
+        statusDiv.className = 'card-status';
+        c.appendChild(statusDiv);
+
+        const probDiv = document.createElement('div');
+        probDiv.className = 'card-prob';
+        c.appendChild(probDiv);
+
         cardsGrid.appendChild(c);
 
         updateCardMarks(index);
@@ -495,6 +954,12 @@ I_2
         }
       }
       checkMultiBingo(cardIdx, matrix);
+
+      if (!card._prob) card._prob = computeCardProb(card);
+      updateProbDisplay(cardEl, card._prob);
+      applyGhost(cells, card._prob);
+      cardEl.classList.toggle('is-bingo', card._prob.minNeed === 0);
+      cardEl.classList.toggle('is-close', card._prob.minNeed === 1);
     }
 
     function updateAllCards(){ for (let i=0;i<cards.length;i++) updateCardMarks(i); }
@@ -513,7 +978,7 @@ I_2
       const msg = document.getElementById(`bingo-msg-${cardIdx}`);
       if (!msg) return;
       if (bingoCount===0){ msg.style.display='none'; }
-      else { msg.style.display='block'; msg.textContent = bingoCount===1?'BINGO!':bingoCount===2?'DOPPEL-BINGO!':bingoCount===3?'DREIFACH-BINGO!':'MEHRFACH-BINGO!'; }
+      else { msg.style.display='inline-flex'; msg.textContent = bingoCount===1?'BINGO!':bingoCount===2?'DOPPEL-BINGO!':bingoCount===3?'DREIFACH-BINGO!':'MEHRFACH-BINGO!'; }
     }
 
     function checkDuplicatesInCard(cardIdx){
@@ -538,11 +1003,11 @@ I_2
       const idx = getLetterIndex(num);
       if (idx===-1) return false;
       if (allDrawn.includes(num)) return false;
-      if (allDrawn.length >= MAX_DRAWS) { alert(`Maximal ${MAX_DRAWS} Zahlen insgesamt erlaubt!`); return false; }
+      if (allDrawn.length >= MAX_DRAWS) return false;
       drawnNumbers[idx].push(num);
       allDrawn.push(num);
       pushAction({type:'add-draw', num});
-      updateDrawnList(); updateAllCards();
+      updateDrawnList(); rerender();
       return true;
     }
 
@@ -552,7 +1017,7 @@ I_2
       drawnNumbers[idx] = drawnNumbers[idx].filter(n => n !== num);
       allDrawn = allDrawn.filter(n => n !== num);
       pushAction({type:'remove-draw', num});
-      updateDrawnList(); updateAllCards();
+      updateDrawnList(); rerender();
       return true;
     }
 
@@ -584,10 +1049,13 @@ I_2
         case 'clear-draws':
           action.old.forEach(n => { drawnNumbers[getLetterIndex(n)].push(n); allDrawn.push(n); });
           break;
+        case 'clear-all-cards':
+          cards = action.old.slice();
+          break;
         default:
           console.warn('Unknown undo action', action);
       }
-      renderCards(); updateDrawnList(); updateUndoRedoButtons();
+      updateDrawnList(); rerender(); updateUndoRedoButtons();
     }
 
     function redo(){
@@ -616,8 +1084,11 @@ I_2
         case 'clear-draws':
           drawnNumbers = [[],[],[],[],[]]; allDrawn = [];
           break;
+        case 'clear-all-cards':
+          cards = [];
+          break;
       }
-      renderCards(); updateDrawnList(); updateUndoRedoButtons();
+      updateDrawnList(); rerender(); updateUndoRedoButtons();
     }
 
     // JSON import/export
@@ -643,14 +1114,14 @@ I_2
               const n = parseInt(num,10);
               if (!isNaN(n) && n>=1 && n<=75 && !allDrawn.includes(n)){
                 const idx = getLetterIndex(n);
-                if (idx!==-1) drawnNumbers[idx].push(n), allDrawn.push(n);
+                if (idx!==-1){ drawnNumbers[idx].push(n); allDrawn.push(n); }
               }
             });
           }
           if (state.cards && Array.isArray(state.cards)){
             cards = state.cards.map(c=>({ name: c.name || '', numbers: normalizeNumbersMatrix(c.numbers) }));
           }
-          renderCards(); updateDrawnList(); alert('Bingo-Spiel erfolgreich geladen!');
+          updateDrawnList(); rerender(); alert('Bingo-Spiel erfolgreich geladen!');
         }catch(err){
           alert('Fehler beim Laden: ' + err.message);
         }
@@ -669,6 +1140,41 @@ I_2
         }
       }
       return res;
+    }
+
+    /* Persistenz: übersteht einen Seiten-Refresh, wird aber nur in
+       sessionStorage gehalten – also beim Schließen des Tabs/Browsers
+       automatisch verworfen (nichts wird dauerhaft auf dem Gerät abgelegt). */
+    const STORAGE_KEY = 'bingo-pruefer-session';
+
+    function persist(){
+      try{
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+          allDrawn, cards, sortEnabled, editMode, activePathMode
+        }));
+      }catch(e){ /* Speicher nicht verfügbar – einfach ignorieren */ }
+    }
+
+    function loadState(){
+      let s;
+      try{ s = JSON.parse(sessionStorage.getItem(STORAGE_KEY)); }catch(e){ return; }
+      if (!s || typeof s !== 'object') return;
+      if (Array.isArray(s.allDrawn)){
+        drawnNumbers = [[],[],[],[],[]]; allDrawn = [];
+        s.allDrawn.forEach(num => {
+          const n = parseInt(num,10);
+          if (!isNaN(n) && n>=1 && n<=75 && !allDrawn.includes(n)){
+            const idx = getLetterIndex(n);
+            if (idx!==-1){ drawnNumbers[idx].push(n); allDrawn.push(n); }
+          }
+        });
+      }
+      if (Array.isArray(s.cards)){
+        cards = s.cards.map(c => ({ name: c.name || '', numbers: normalizeNumbersMatrix(c.numbers) }));
+      }
+      sortEnabled = !!s.sortEnabled;
+      editMode = !!s.editMode;
+      activePathMode = ['single','double','triple'].includes(s.activePathMode) ? s.activePathMode : null;
     }
 
     // Text import
@@ -692,30 +1198,88 @@ I_2
       const newCard = { name: `${source} ${new Date().toLocaleTimeString()}`, numbers };
       cards.push(newCard);
       pushAction({type:'create-card', idx: cards.length-1, card: newCard});
-      renderCards(); updateAllCards(); alert(`Los erstellt: erkannte Zahlen ${numbers.flat().filter(n=>n!=='').length}/25`);
+      rerender(); alert(`Los erstellt: erkannte Zahlen ${numbers.flat().filter(n=>n!=='').length}/25`);
     }
 
     // Utilities
-    function resetAll(){ if (!confirm('Alles zurücksetzen? (gezogene Zahlen & Lose)')) return; drawnNumbers=[[],[],[],[],[]]; allDrawn=[]; cards=[]; actionStack=[]; redoStack=[]; renderCards(); updateDrawnList(); updateUndoRedoButtons(); }
-    function clearAllCards(){ if (!confirm('Alle Lose endgültig löschen?')) return; cards=[]; pushAction({type:'clear-all-cards'}); renderCards(); }
+    function resetAll(){ if (!confirm('Alles zurücksetzen? (gezogene Zahlen & Lose)')) return; drawnNumbers=[[],[],[],[],[]]; allDrawn=[]; cards=[]; actionStack=[]; redoStack=[]; updateDrawnList(); rerender(); updateUndoRedoButtons(); }
+    function clearAllCards(){ if (!confirm('Alle Lose endgültig löschen?')) return; const old = cards.slice(); cards=[]; pushAction({type:'clear-all-cards', old}); rerender(); }
 
     // Random draw
-    function randomDraw(){ const possible=[]; for (let i=1;i<=75;i++) if (!allDrawn.includes(i)) possible.push(i); if (!possible.length){ alert('Keine verbleibenden Zahlen!'); return; } const pick = possible[Math.floor(Math.random()*possible.length)]; addDraw(pick); }
+    function randomDraw(){
+      if (allDrawn.length >= MAX_DRAWS){ toast(`Schon ${MAX_DRAWS} Zahlen gezogen`, 'warn'); return; }
+      const possible=[]; for (let i=1;i<=75;i++) if (!allDrawn.includes(i)) possible.push(i);
+      if (!possible.length){ toast('Keine verbleibenden Zahlen', 'warn'); return; }
+      const pick = possible[Math.floor(Math.random()*possible.length)];
+      addDraw(pick); toast(`${pick} gezogen`, 'success');
+    }
+
+    // Pfad-Segmentregler (Aus / Einfach / Doppel / Dreifach)
+    function setPathMode(mode){
+      activePathMode = mode || null;
+      pathSegBtns.forEach(b => b.classList.toggle('active', (b.dataset.mode||'') === (activePathMode||'')));
+      const lineCount = { single:1, double:2, triple:3 }[activePathMode] || 0;
+      ghostLegend.classList.toggle('show', activePathMode !== null);
+      ghostLegend.querySelectorAll('span').forEach(s => {
+        s.style.display = (+s.dataset.need <= lineCount) ? 'inline-flex' : 'none';
+      });
+      updateAllCards();
+      persist();
+    }
+
+    // Neues (leeres) Los anlegen und direkt in den Bearbeiten-Modus wechseln.
+    function addBlankCard(){
+      const c = { name:'', numbers: cloneEmptyGrid() };
+      cards.push(c);
+      pushAction({type:'create-card', idx: cards.length-1, card: c});
+      if (!editMode){ editMode = true; modeToggle.classList.add('active'); modeToggle.title = 'Bearbeiten beenden'; }
+      rerender();
+    }
 
     // Event wiring
-    drawForm.addEventListener('submit', (e)=>{ e.preventDefault(); const v = drawInput.value.trim(); const n = parseInt(v,10); drawInput.value=''; if (isNaN(n)) return; addDraw(n); });
-    drawnList.addEventListener('click', (e)=>{ if (!e.target.classList.contains('drawn-num')) return; const num = parseInt(e.target.dataset.num,10); if (!isNaN(num)) removeDraw(num); });
+    drawForm.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const v = drawInput.value.trim();
+      drawInput.value=''; drawInput.focus();
+      if (v === '') return;
+      if (!tryDraw(parseInt(v,10))) shake(drawInput);
+    });
+    drawnList.addEventListener('click', (e)=>{ const btn = e.target.closest('.drawn-num'); if (!btn) return; const num = parseInt(btn.dataset.num,10); if (!isNaN(num)) removeDraw(num); });
     randomDrawBtn.addEventListener('click', randomDraw);
-    clearDrawsBtn.addEventListener('click', ()=>{ if (!confirm('Gezogene Zahlen löschen?')) return; const old = allDrawn.slice(); drawnNumbers=[[],[],[],[],[]]; allDrawn=[]; pushAction({type:'clear-draws', old}); updateDrawnList(); updateAllCards(); });
 
-    addCardBtn.addEventListener('click', ()=>{ const c = { name:'', numbers: cloneEmptyGrid() }; cards.push(c); pushAction({type:'create-card', idx: cards.length-1, card: c}); renderCards(); });
+    // Zahlenfeld: antippen zieht bzw. entfernt eine Zahl; Toggle blendet es ein/aus.
+    numberPad.addEventListener('click', (e)=>{
+      const b = e.target.closest('.pad-num');
+      if (!b || b.disabled) return;
+      const n = parseInt(b.dataset.num,10);
+      if (allDrawn.includes(n)) removeDraw(n); else tryDraw(n, {silent:true});
+    });
+    padToggle.addEventListener('click', ()=>{
+      const open = numberPad.classList.toggle('open');
+      padToggle.classList.toggle('active', open);
+    });
+    clearDrawsBtn.addEventListener('click', ()=>{ if (!allDrawn.length){ return; } if (!confirm('Gezogene Zahlen löschen?')) return; const old = allDrawn.slice(); drawnNumbers=[[],[],[],[],[]]; allDrawn=[]; pushAction({type:'clear-draws', old}); updateDrawnList(); rerender(); });
+
+    // "+ Neues Los" öffnet ein kleines Menü: leeres Los oder Los aus Text.
+    addCardBtn.addEventListener('click', (e)=>{ e.stopPropagation(); addMenu.classList.toggle('open'); menuPanel.classList.remove('open'); });
+    addMenu.querySelectorAll('button').forEach(b => b.addEventListener('click', ()=> addMenu.classList.remove('open')));
+    addBlankBtn.addEventListener('click', addBlankCard);
     clearAllCardsBtn.addEventListener('click', clearAllCards);
 
-    modeToggle.addEventListener('click', ()=>{ editMode = !editMode; modeToggle.textContent = editMode ? '🎟️ Lose spielen' : '🛠️ Lose bearbeiten'; renderCards(); });
+    modeToggle.addEventListener('click', ()=>{ editMode = !editMode; modeToggle.classList.toggle('active', editMode); modeToggle.title = editMode ? 'Bearbeiten beenden' : 'Lose bearbeiten'; rerender(); });
+
+    pathSegBtns.forEach(b => b.addEventListener('click', ()=> setPathMode(b.dataset.mode || null)));
+
+    sortBtn.addEventListener('click', ()=>{
+      sortEnabled = !sortEnabled;
+      sortBtn.classList.toggle('active', sortEnabled);
+      rerender();
+    });
+
     textImportBtn.addEventListener('click', ()=>{ textModalBackdrop.style.display='flex'; textImportArea.focus(); });
     closeTextModalBtn.addEventListener('click', ()=> textModalBackdrop.style.display='none');
     cancelTextBtn.addEventListener('click', ()=> textModalBackdrop.style.display='none');
-    processTextBtn.addEventListener('click', ()=>{ const t = textImportArea.value.trim(); if (!t){ alert('Bitte Text eingeben'); return; } const grid = extractNumbersFromText(t); if (!grid){ alert('Nicht genügend oder keine gültigen Bingo-Zahlen im Text gefunden (mind. 15).'); return; } createCardFromNumbers(grid); textModalBackdrop.style.display='none'; });
+    processTextBtn.addEventListener('click', ()=>{ const t = textImportArea.value.trim(); if (!t){ alert('Bitte Text eingeben'); return; } const grid = extractNumbersFromText(t); if (!grid){ alert('Nicht genügend oder keine gültigen Bingo-Zahlen im Text gefunden (mind. 15).'); return; } createCardFromNumbers(grid); textImportArea.value=''; textModalBackdrop.style.display='none'; });
 
     helpBtn.addEventListener('click', ()=> helpModalBackdrop.style.display='flex');
     closeHelpBtn.addEventListener('click', ()=> helpModalBackdrop.style.display='none');
@@ -729,131 +1293,44 @@ I_2
     undoBtn.addEventListener('click', undo);
     redoBtn.addEventListener('click', redo);
 
-    document.getElementById('textModalBackdrop').addEventListener('click', (e)=>{ if (e.target === textModalBackdrop) textModalBackdrop.style.display='none'; });
+    // Menü öffnen/schließen
+    menuBtn.addEventListener('click', (e)=>{ e.stopPropagation(); menuPanel.classList.toggle('open'); addMenu.classList.remove('open'); });
+    menuPanel.querySelectorAll('button').forEach(b => b.addEventListener('click', ()=> menuPanel.classList.remove('open')));
+    document.addEventListener('click', (e)=>{
+      if (menuPanel.classList.contains('open') && !menuPanel.contains(e.target) && e.target !== menuBtn) menuPanel.classList.remove('open');
+      if (addMenu.classList.contains('open') && !addMenu.contains(e.target) && e.target !== addCardBtn) addMenu.classList.remove('open');
+    });
+    document.addEventListener('keydown', (e)=>{
+      if (e.key === 'Escape'){ menuPanel.classList.remove('open'); addMenu.classList.remove('open'); textModalBackdrop.style.display='none'; helpModalBackdrop.style.display='none'; return; }
+      // Undo/Redo per Tastatur – aber nicht, während in einem Feld getippt wird.
+      if (e.ctrlKey || e.metaKey){
+        const tag = (e.target.tagName || '').toLowerCase();
+        if (tag === 'input' || tag === 'textarea') return;
+        const k = e.key.toLowerCase();
+        if (k === 'z' && !e.shiftKey){ e.preventDefault(); undo(); }
+        else if (k === 'y' || (k === 'z' && e.shiftKey)){ e.preventDefault(); redo(); }
+      }
+    });
+
+    textModalBackdrop.addEventListener('click', (e)=>{ if (e.target === textModalBackdrop) textModalBackdrop.style.display='none'; });
     helpModalBackdrop.addEventListener('click', (e)=>{ if (e.target === helpModalBackdrop) helpModalBackdrop.style.display='none'; });
 
-    function init(){ renderCards(); updateDrawnList(); updateUndoRedoButtons(); }
+    function init(){
+      loadState();
+      sortBtn.classList.toggle('active', sortEnabled);
+      modeToggle.classList.toggle('active', editMode);
+      modeToggle.title = editMode ? 'Bearbeiten beenden' : 'Lose bearbeiten';
+      renderNumberPad();
+      updateDrawnList();
+      rerender();
+      setPathMode(activePathMode);   // stellt Segment-Regler, Legende & Geister wieder her
+      updateUndoRedoButtons();
+    }
     init();
 
     // Expose for debugging
-    window.Bingo = { addDraw, removeDraw, exportToJSON, importFromJSONFile, addCard: ()=>addCardBtn.click(), randomDraw };
+    window.Bingo = { addDraw, removeDraw, exportToJSON, importFromJSONFile, addCard: addBlankCard, randomDraw };
   </script>
-  <script>
-  (function(){
-    const MAX_DRAWS = 22;
-    let autoRunning = false;
-    let roundCount = 0;
-    let drawIndex = 0;
-    let availableNumbers = [];
-    let autoTimeout = null;
-
-    const autoBtn = document.getElementById('toggleAutoBtn');
-    const roundDisplay = document.getElementById('autoRoundCount');
-
-    function updateRoundDisplay() {
-      if(roundDisplay) roundDisplay.textContent = 'Runden: ' + roundCount;
-    }
-
-    function bingoAchieved() {
-      for(let i=0; i<cards.length; i++){
-        const card = cards[i];
-        if(!card) continue;
-        let matrix = Array.from({length:5}, () => Array(5).fill(false));
-        for(let r=0; r<5; r++){
-          for(let c=0; c<5; c++){
-            const val = card.numbers[r][c];
-            if(typeof val === 'number' && drawnNumbers[c].includes(val)){
-              matrix[r][c] = true;
-            }
-          }
-        }
-        let countBingo = 0;
-        for(let r=0; r<5; r++) if(matrix[r].every(Boolean)) countBingo++;
-        for(let c=0; c<5; c++) if(matrix.every(row => row[c])) countBingo++;
-        if(matrix.every((row,i)=>row[i])) countBingo++;
-        if(matrix.every((row,i)=>row[4-i])) countBingo++;
-        if(countBingo > 0) return true;
-      }
-      return false;
-    }
-
-    function resetDraws() {
-      // Alle gezogenen Zahlen entfernen
-      while(allDrawn.length > 0){
-        removeDraw(allDrawn[allDrawn.length - 1]);
-      }
-      initAvailableNumbers();
-    }
-
-    function initAvailableNumbers() {
-      availableNumbers = [];
-      for(let i=1; i<=75; i++){
-        if(!allDrawn.includes(i)) availableNumbers.push(i);
-      }
-    }
-
-    function drawNextNumber() {
-      if(!autoRunning) return;
-      if(drawIndex >= MAX_DRAWS){
-        // 22 Zahlen gezogen, jetzt prüfen
-        if(bingoAchieved()){
-          alert(`Bingo in Runde ${roundCount+1} erreicht!`);
-          toggleAuto(false);
-          return;
-        }
-        // Kein Bingo, zurücksetzen und neue Runde
-        resetDraws();
-        roundCount++;
-        updateRoundDisplay();
-        drawIndex = 0;
-        setTimeout(drawNextNumber, 100); // Pause 0.1s vor nächster Runde
-        return;
-      }
-      // Noch nicht 22 Zahlen gezogen => nächste ziehen
-      if(availableNumbers.length === 0){
-        alert('Keine Zahlen mehr verfügbar, Stopp!');
-        toggleAuto(false);
-        return;
-      }
-      // Zahl zufällig wählen
-      const idx = Math.floor(Math.random()*availableNumbers.length);
-      const num = availableNumbers.splice(idx,1)[0];
-      addDraw(num);
-      drawIndex++;
-      setTimeout(drawNextNumber, 300); // 300ms Pause bis zur nächsten Ziehung
-    }
-
-    function toggleAuto(start) {
-      if(typeof start === 'undefined') start = !autoRunning;
-      autoRunning = start;
-      if(autoRunning){
-        autoBtn.textContent = '⏹️ Automatik stoppen';
-        roundCount = 0;
-        updateRoundDisplay();
-        resetDraws();
-        initAvailableNumbers();
-        drawIndex = 0;
-        drawNextNumber();
-      } else {
-        autoBtn.textContent = '▶️ Automatik starten';
-        if(autoTimeout){
-          clearTimeout(autoTimeout);
-          autoTimeout = null;
-        }
-      }
-    }
-
-    // Eventlistener für Button
-    autoBtn.addEventListener('click', () => {
-      toggleAuto();
-    });
-
-    // Falls Button und Anzeige noch nicht im DOM sind, Ausgabe in Konsole:
-    if(!autoBtn) console.warn('Button für Automatikmodus (toggleAutoBtn) fehlt im DOM');
-    if(!roundDisplay) console.warn('Anzeige für Runden (autoRoundCount) fehlt im DOM');
-
-  })();
-</script>
 
 </body>
 </html>
